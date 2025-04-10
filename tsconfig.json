@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noImplicitAny": true,
     "target": "esnext",
     "module": "esnext",
     "strict": true,
@@ -13,12 +14,10 @@
     "baseUrl": ".",
     "types": [
       "webpack-env",
-      "element-plus/global"
+      "vite/client"
     ],
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "lib": [
       "esnext",
@@ -31,6 +30,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
+    "src/**/*.d.ts",
     "tests/**/*.ts",
     "tests/**/*.tsx"
   ],
