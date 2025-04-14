@@ -23,6 +23,7 @@ export const useUserStore = defineStore('user', () => {
 
         try {
             const userInfo = await getUserInfo(token.value)
+            console.log('从后端接收到的用户信息:', userInfo)
             id.value = userInfo.id
             username.value = userInfo.username
             email.value = userInfo.email || ''
