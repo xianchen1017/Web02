@@ -85,7 +85,7 @@
 
       <!-- 底部按钮区域 -->
       <div class="button-section">
-        <el-button class="reset-btn" @click="handleReset">修改密码</el-button>
+        <el-button class="reset-btn" @click="handleChangePassword">修改密码</el-button>
         <el-button class="back-btn" @click="goToLogin">返回登录</el-button>
       </div>
     </div>
@@ -97,6 +97,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { View, Hide } from '@element-plus/icons-vue'
+import axios from "axios";
 
 const router = useRouter()
 
@@ -171,16 +172,27 @@ const resetRules = reactive({
 })
 
 // 处理密码重置
-const handleReset = () => {
-  resetFormRef.value?.validate((valid: boolean) => {
-    if (!valid) {
-      return
+const handleChangePassword = async () => {
+  try {
+    const res = await axios.post('/api/auth/change-password', {
+      username: resetForm.username,  // 使用 resetForm
+      oldPassword: resetForm.oldPassword,  // 使用 resetForm
+      newPassword: resetForm.newPassword,  // 使用 resetForm
+      confirmPassword: resetForm.confirmPassword  // 使用 resetForm
+    });
+
+    if (res.data.message === '密码修改成功') {
+      ElMessage.success('密码修改成功');
+      router.push('/login');
+    } else {
+      ElMessage.error(res.data.message || '密码修改失败');
     }
-    // 模拟API调用
-    ElMessage.success('密码修改成功')
-    router.push('/login')
-  })
-}
+  } catch (error) {
+    ElMessage.error('修改密码时出现错误');
+  }
+};
+
+
 
 // 跳转到登录页
 const goToLogin = () => {
