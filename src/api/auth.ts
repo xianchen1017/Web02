@@ -1,9 +1,15 @@
-// src/api/auth.ts
 import type { LoginResponse, UserRole, User } from '@/types/user'
-import { mockUserList } from '@/mock/users'
+import request from '@/utils/request'
+import type { ResponseResult } from '@/types/api'
+import axios from 'axios'
 
-// 模拟token前缀
-const MOCK_TOKEN_PREFIX = 'mock-token-'
+export const register = (data: FormData) => {
+    return request.post<ResponseResult<any>>('/auth/register', data, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+    })
+}
 
 /**
  * 用户登录
@@ -14,28 +20,25 @@ export const login = async (credentials: {
     username: string
     password: string
 }): Promise<LoginResponse> => {
-    // 模拟API请求延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
+    try {
+        // 发送登录请求到后端
+        const response = await request.post<LoginResponse>('/auth/login', credentials);
 
-    // 在模拟用户列表中查找用户
-    const user = mockUserList.find(
-        u => u.username === credentials.username &&
-            u.password === credentials.password
-    )
-
-    if (!user) {
-        throw new Error('用户名或密码错误')
-    }
-
-    // 确保返回的数据符合LoginResponse类型
-    return {
-        token: `${MOCK_TOKEN_PREFIX}${user.id}`,
-        userInfo: {
-            id: user.id,
-            username: user.username,
-            role: user.role as UserRole,
-            avatar: user.avatar || '', // 提供默认值
-            email: user.email || ''    // 提供默认值
+        if (response.data && response.data.success) {
+            // 成功返回数据，返回登录响应数据
+            return response.data;
+        } else {
+            // 登录失败
+            throw new Error('用户名或密码错误');
+        }
+    } catch (error: unknown) {
+        // 处理 error 为 unknown 类型
+        if (error instanceof Error) {
+            // 如果 error 是 Error 实例
+            throw new Error(error.message || '登录请求失败');
+        } else {
+            // 处理其他未知类型的 error
+            throw new Error('登录请求失败，发生未知错误');
         }
     }
 }
@@ -56,37 +59,20 @@ export const logout = async (): Promise<void> => {
  * @returns Promise<User> 返回完整的用户信息
  */
 export const getUserInfo = async (token: string): Promise<User> => {
-    // 验证token格式
-    if (!token.startsWith(MOCK_TOKEN_PREFIX)) {
-        throw new Error('无效的token格式')
-    }
+    try {
+        // 请求后端获取用户信息
+        const response = await request.get<ResponseResult<User>>('/user/info', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-    // 从token中提取用户ID
-    const userId = parseInt(token.replace(MOCK_TOKEN_PREFIX, ''))
-
-    // 模拟API请求延迟
-    await new Promise(resolve => setTimeout(resolve, 300))
-
-    // 查找用户
-    const user = mockUserList.find(u => u.id === userId)
-    if (!user) {
-        throw new Error('用户不存在')
-    }
-
-    // 返回完整的用户信息
-    return {
-        id: user.id,
-        username: user.username,
-        password: user.password, // 实际项目中不应该返回密码
-        email: user.email || '',
-        phone: user.phone || '',
-        role: user.role as UserRole,
-        status: user.status || 1,
-        avatar: user.avatar || '',
-        createTime: user.createTime || new Date().toISOString(),
-        updateTime: user.updateTime || new Date().toISOString()
+        return response.data; // 现在可以访问 response.data
+    } catch (error) {
+        throw new Error('无法获取用户信息');
     }
 }
+
 
 /**
  * 验证token有效性
@@ -95,9 +81,9 @@ export const getUserInfo = async (token: string): Promise<User> => {
  */
 export const verifyToken = async (token: string): Promise<boolean> => {
     try {
-        await getUserInfo(token)
-        return true
+        const userInfo = await getUserInfo(token);
+        return !!userInfo; // 如果获取到了用户信息，token有效
     } catch {
-        return false
+        return false; // 如果获取用户信息失败，token无效
     }
 }

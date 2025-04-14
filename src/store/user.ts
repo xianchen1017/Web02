@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { login, logout, getUserInfo } from '@/api/auth'
 import router from '@/router'
 import { ElMessage } from 'element-plus'
-import type { UserRole, LoginResponse } from '@/types/user'
+import type { UserRole } from '@/types/user'
 
 export const useUserStore = defineStore('user', () => {
     const token = ref(localStorage.getItem('token') || '')
@@ -12,7 +12,7 @@ export const useUserStore = defineStore('user', () => {
     const username = ref('')
     const email = ref('')
     const avatar = ref('')
-    const role = ref<UserRole>('user') // 使用UserRole类型
+    const role = ref<UserRole>('user')
     const isInitialized = ref(false)
     const registerTime = ref('')
     const lastLoginTime = ref('')
@@ -53,7 +53,7 @@ export const useUserStore = defineStore('user', () => {
     // 登录方法
     const userLogin = async (credentials: { username: string; password: string }) => {
         try {
-            const response = await login(credentials)
+            const response = await login(credentials)  // 调用API进行登录
             token.value = response.token
             id.value = response.userInfo.id
             username.value = response.userInfo.username
@@ -70,9 +70,9 @@ export const useUserStore = defineStore('user', () => {
             registerTime.value = registerTime.value || now
             lastLoginTime.value = now
 
-            // 跳转
+            // 获取跳转的路径，默认为 '/'
             const redirect = router.currentRoute.value.query.redirect || '/'
-            await router.push(redirect as string)
+            await router.push(redirect as string)  // 跳转到原来的页面或主页
 
             return response
         } catch (error) {
@@ -105,9 +105,22 @@ export const useUserStore = defineStore('user', () => {
         localStorage.removeItem('userInfo')
     }
 
-    // 检查是否已登录
-    const isAuthenticated = () => !!token.value
+    // 设置用户信息
+    const setUser = (userData: any) => {
+        token.value = userData.token
+        username.value = userData.username
+        email.value = userData.email || ''
+        avatar.value = userData.avatar || ''
+        role.value = userData.role
+        // 将用户数据存储到localStorage中
+        localStorage.setItem('token', userData.token)
+        localStorage.setItem('userInfo', JSON.stringify(userData))
+    }
 
+    // 检查是否认证
+    const isAuthenticated = () => {
+        return !!localStorage.getItem('token');  // 如果 token 存在，则用户已认证
+    };
     // 检查角色权限
     const hasRole = (requiredRole: UserRole) => role.value === requiredRole
 
@@ -125,6 +138,7 @@ export const useUserStore = defineStore('user', () => {
         logout: userLogout,
         initUser,
         isAuthenticated,
-        hasRole
+        hasRole,
+        setUser  // 在返回的对象中添加setUser
     }
 })

@@ -1,3 +1,4 @@
+<!--src/views/Login.vue-->
 <template>
   <div class="login-container">
     <div class="login-box">
@@ -87,6 +88,8 @@ import { ElMessage } from 'element-plus'
 import { FormInstance, FormRules } from 'element-plus'
 import { View, Hide } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { login } from '@/api/auth'
+import axios from "axios"; // 导入模拟的login方法
 
 
 // 表单引用
@@ -128,56 +131,71 @@ const loading = ref(false)
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
-// 检查登录状态
-const isLoggedIn = userStore.isAuthenticated()
-// 获取用户名
-const username = userStore.username
 
-const handleLogout = () => {
-  userStore.logout()
-}
 
-// 处理登录 - 修正后的版本
+// 处理登录 - 适配模拟API
 const handleLogin = async () => {
-  loginFormRef.value?.validate((valid) => {
-    if (!valid) {
-      return // 直接返回，不执行后续逻辑
-    }
-
-    loading.value = true
-    // 这里替换为实际的登录API调用
-    setTimeout(() => {
-      // 模拟登录成功
-      ElMessage.success('登录成功')
-      router.push('/') // 跳转到首页
-      loading.value = false
-    }, 1000)
-  })
   try {
-    // 验证表单
-    await loginFormRef.value?.validate()
-    loading.value = true
+    await loginFormRef.value?.validate();  // 校验表单
 
-    // 调用 userStore 的登录方法
-    await userStore.login({
-      username: loginForm.username,
-      password: loginForm.password
-    })
+    // 发送登录请求
+    const res = await axios.post('/api/auth/login', {
+      username: loginForm.username,  // 用户名
+      password: loginForm.password   // 密码
+    });
 
+    // 打印登录数据进行调试
+    console.log("登录用户名: ", loginForm.username);
+    console.log("登录密码: ", loginForm.password);
+
+    // 打印响应数据进行调试
+    console.log("登录响应数据: ", res);
+
+    // 根据返回的 message 判断登录是否成功
+    if (res.data.message === '登录成功') {
+      ElMessage.success(res.data?.message || '登录成功');  // 显示成功消息
+
+      // 调用 store 中的 setUser 方法
+      const userData = res.data.data; // 获取用户数据
+      userStore.setUser({
+        token: userData,  // 保存 token
+        username: userData.username,
+        avatar: userData.avatar || '', // 如果有其他用户信息也一起保存
+        // 保存更多用户信息...
+      });  // 设置用户信息到 store 中
+
+      router.push('/');
+
+      // router.push('/register')
+    } else {
+      ElMessage.error(res.data?.message || '用户名或密码错误');  // 错误提示
+    }
   } catch (error) {
-    // 错误信息已经在 userStore 中处理，这里不需要再次显示
-    console.error('登录错误:', error)
+    ElMessage.error('登录失败');  // 异常处理
+  }
+};
+
+
+
+
+
+// 社交登录方法
+const loginWithQQ = async () => {
+  try {
+    loading.value = true
+    // 这里应该调用 userStore 的社交登录方法
+    // 例如: await userStore.socialLogin('qq')
+    ElMessage.success('QQ登录成功')
+  } catch (error) {
+    if (error instanceof Error) {
+      ElMessage.error(error.message || '登录失败')
+    } else {
+      ElMessage.error('登录失败')
+    }
   } finally {
     loading.value = false
   }
 }
-
-// 社交登录方法
-const loginWithQQ = () => {
-  ElMessage.info('QQ登录功能开发中')
-  // 这里可以添加QQ登录的逻辑
-}
-
 const loginWithWeChat = () => {
   ElMessage.info('微信登录功能开发中')
   // 这里可以添加微信登录的逻辑

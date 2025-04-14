@@ -59,6 +59,10 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
+  if (!userStore.isInitialized) {
+    await userStore.initUser()
+  }
+
   // 初始化用户状态（添加错误处理）
   try {
     if (!userStore.isInitialized) {
@@ -72,7 +76,7 @@ router.beforeEach(async (to, from, next) => {
   // 类型安全的状态检查
   const isAuthenticated = userStore.isAuthenticated()
   const userRole = userStore.role as UserRole // 显式类型声明
-
+  console.log('用户认证状态:', userStore.isAuthenticated());
   // 1. 已登录用户访问guestOnly页面
   if (to.meta.guestOnly && isAuthenticated) {
     return next('/')

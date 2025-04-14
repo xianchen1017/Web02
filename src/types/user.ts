@@ -28,6 +28,9 @@ export interface User {
 export interface LoginResponse {
     token: string
     userInfo: Pick<User, 'id' | 'username' | 'role' | 'avatar' | 'email'>
+    success: boolean; // 登录成功与否
+    message: string; // 提示信息
+    data: any; // 返回的数据（如果有）
 }
 
 // 分页查询参数

@@ -1,3 +1,4 @@
+<!--src/views/Register.vue-->
 <template>
   <div class="register-container">
     <div class="register-box">
@@ -89,6 +90,9 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { View, Hide, Plus } from '@element-plus/icons-vue'
+import { register } from '@/api/auth' // 新增API调用
+import type { UploadFile } from 'element-plus'
+import axios from "axios";
 
 const router = useRouter()
 
@@ -103,22 +107,30 @@ const registerForm = reactive({
   birthDate: ''
 })
 
-// 头像上传
-const avatarUrl = ref('')
-const handleAvatarChange = (file: any) => {
-  const isImage = file.raw.type.includes('image/')
-  const isLt2M = file.raw.size / 1024 / 1024 < 2
+// 头像文件引用
+const avatarFile = ref<File | null>(null)
+// 明确定义 avatarUrl 的类型
+const avatarUrl = ref<string | null>(null)
+
+// 处理头像上传
+const handleAvatarChange = (file: UploadFile) => {
+  const rawFile = file.raw as File
+  const isImage = rawFile.type.includes('image/')
+  const isLt2M = rawFile.size / 1024 / 1024 < 2
 
   if (!isImage) {
     ElMessage.error('只能上传图片文件!')
-    return
+    return false
   }
   if (!isLt2M) {
     ElMessage.error('图片大小不能超过2MB!')
-    return
+    return false
   }
 
-  avatarUrl.value = URL.createObjectURL(file.raw)
+  // 生成预览 URL
+  avatarUrl.value = URL.createObjectURL(rawFile)
+  avatarFile.value = rawFile
+  return true
 }
 
 // 密码显示/隐藏
@@ -172,21 +184,67 @@ const registerRules = reactive({
   ]
 })
 
-// 处理注册
-const handleRegister = () => {
-  registerFormRef.value?.validate((valid: boolean) => {
-    if (!valid) {
-      return
+// 修改前端请求
+const handleRegister = async () => {
+  try {
+    // 校验表单
+    await registerFormRef.value?.validate();
+
+    // 确保上传头像文件
+    if (!avatarFile.value) {
+      ElMessage.warning('请上传头像');
+      return;
     }
-    if (!avatarUrl.value) {
-      ElMessage.warning('请上传头像')
-      return
+
+    // 打印表单数据进行调试
+    console.log("注册用户名: ", registerForm.username);
+    console.log("注册密码: ", registerForm.password);
+
+    // 构建 FormData
+    const formData = new FormData();
+
+    // 包装数据到 registerDTO
+    const registerDTO = {
+      username: registerForm.username,
+      password: registerForm.password,
+      email: registerForm.email,
+      birthday: registerForm.birthDate,
+    };
+
+    // 将 registerDTO 作为一个整体对象传递给 FormData
+    formData.append('registerDTO', JSON.stringify(registerDTO)); // 注意这里要将对象序列化为 JSON 字符串
+
+    // 将头像文件添加到 FormData
+    formData.append('avatar', avatarFile.value);
+
+    // 打印 FormData 内容进行调试
+    console.log(formData);
+
+    // 发送注册请求
+    const res = await axios.post('/api/auth/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    // 请求成功后，显示成功信息并跳转
+    ElMessage.success(res.data?.message || '注册成功');
+    router.push('/login');
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('注册失败:', error.message);
+      ElMessage.error(error.message);
+    } else if (axios.isAxiosError(error)) {
+      const message = error.response?.data?.message || '注册失败';
+      ElMessage.error(message);
+    } else {
+      ElMessage.error('发生未知错误');
     }
-    // 模拟注册API调用
-    ElMessage.success('注册成功')
-    router.push('/login') // 跳转到登录页
-  })
-}
+  }
+};
+
+
+
 
 // 跳转到登录页
 const goToLogin = () => {

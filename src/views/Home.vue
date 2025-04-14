@@ -411,7 +411,6 @@ import {request} from "node:http";
 import {UserListResponse, UserQueryParams} from "@/types/user";
 import { User } from "@/types/user";  // 确保路径正确
 import axios from 'axios';
-import { mockUserListResponse } from '@/mock/users';
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore() // 先声明
@@ -471,13 +470,13 @@ interface ListResult {
   list: User[]
   total: number
 }
-const userList = ref<User[]>(mockUserListResponse.list);
+const userList = ref<User[]>([])
 const filteredUserList = ref<User[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
-const totalUsers = ref(mockUserListResponse.total);
+const totalUsers = ref(0)
 // API响应处理
 const handleUserListResponse = (res: UserListResponse) => {
   userList.value = res.list
@@ -535,25 +534,15 @@ const roleOptions = [
 const fetchUserList = async () => {
   loading.value = true
   try {
-    // 模拟网络延迟
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 实现前端分页和搜索
-    let filteredList = [...mockUserListResponse.list]
-    // 搜索功能
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filteredList = filteredList.filter(user =>
-          user.username.toLowerCase().includes(query) ||
-          user.email.toLowerCase().includes(query) ||
-          user.phone.includes(query) ||
-          user.role.toLowerCase().includes(query)
-      )
-    }
-    // 分页功能
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    userList.value = filteredList.slice(start, end)
-    totalUsers.value = filteredList.length
+    const res = await axios.get<UserListResponse>('/api/user/list', {
+      params: {
+        page: currentPage.value,
+        size: pageSize.value,
+        keyword: searchQuery.value
+      }
+    })
+    userList.value = res.data.list
+    totalUsers.value = res.data.total
   } catch (error) {
     ElMessage.error('获取用户列表失败')
   } finally {
@@ -659,30 +648,17 @@ const getUserList = async (params: { page: number; size: number; keyword?: strin
 };
 // 新增用户
 const addUser = async (user: User) => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  const newId = Math.max(...mockUserListResponse.list.map(u => u.id)) + 1
-  mockUserListResponse.list.unshift({
-    ...user,
-    id: newId,
-    createTime: new Date().toISOString().split('T')[0]
-  })
-  mockUserListResponse.total += 1
+  await axios.post('/api/user', user)
   ElMessage.success('新增用户成功')
 }
 // 编辑用户
 const updateUser = async (user: User) => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  const index = mockUserListResponse.list.findIndex(u => u.id === user.id)
-  if (index !== -1) {
-    mockUserListResponse.list[index] = user
-  }
+  await axios.put(`/api/user/${user.id}`, user)
   ElMessage.success('更新用户成功')
 }
 // 删除用户
 const deleteUser = async (id: number) => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  mockUserListResponse.list = mockUserListResponse.list.filter(u => u.id !== id)
-  mockUserListResponse.total -= 1
+  await axios.delete(`/api/user/${id}`)
   ElMessage.success('删除用户成功')
 }
 // 文章管理相关状态
@@ -996,11 +972,7 @@ const submitArticleForm = async () => {
     ElMessage.error('操作失败')
   }
 }
-// 在onMounted中添加
-onMounted(() => {
-  initChart()
-  fetchAuthorList()
-})
+
 // 监听作者列表变化
 watch(authorList, () => {
   nextTick(() => {

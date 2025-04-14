@@ -1,8 +1,13 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+// D:\JAVA SHIT\web02\src\utils\request.ts
+import axios from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { ResponseResult } from '@/types/api'
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/user';
+import router from '@/router'
 
 const service = axios.create({
+    baseURL: '/api', // 统一后端地址
     timeout: 5000
 });
 
@@ -14,6 +19,16 @@ service.interceptors.request.use(config => {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
+});
+
+axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+}, (error) => {
+    return Promise.reject(error);
 });
 
 // 响应拦截器

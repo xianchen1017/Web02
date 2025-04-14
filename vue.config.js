@@ -46,5 +46,15 @@ module.exports = defineConfig({
           transpileOnly: true,
           happyPackMode: false // 禁用并行处理，避免某些奇怪问题
         })
+  },
+  devServer: {
+    port: 8080, // 前端开发端口
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081', // 后端地址
+        changeOrigin: true,
+        pathRewrite: {  '^/api': '/api' } // 根据后端实际情况决定是否重写路径
+      }
+    }
   }
 })
