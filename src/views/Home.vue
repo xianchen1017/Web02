@@ -38,18 +38,10 @@
     <div class="main-content">
       <!-- 顶部用户信息栏 -->
       <div class="header">
-        <!-- 修改顶部用户信息栏部分 -->
         <div class="user-info">
-          <el-dropdown @command="handleCommand">
-            <el-avatar :size="40" :src="userStore.avatar" />
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">基本信息</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <el-avatar :size="40" :src="userStore.avatar || 'default-avatar.png'" />
           <span class="username">{{ userStore.username }}</span>
+          <el-button @click="handleLogout" size="small" type="danger" plain>退出登录</el-button>
         </div>
         <!-- 动态内容区域 -->
         <div class="content-area">
@@ -116,7 +108,7 @@
         <div class="user-profile">
           <el-card shadow="hover">
             <div class="profile-content">
-              <el-avatar :size="120" :src="userStore.avatar" />
+              <el-avatar :size="120" :src="userStore.avatar || 'default-avatar.png'" />
               <div class="profile-info">
                 <h3>{{ userStore.username }}</h3>
                 </div>
@@ -126,42 +118,13 @@
         <!-- 右侧日历 -->
         <div class="calendar-section">
           <el-card shadow="hover">
-            <template v-if="!showProfileInfo">
-              <el-calendar v-model="currentDate">
-                <template #date-cell="{ data }">
-                  <div :class="{'current-day': isCurrentDay(data.date)}">
-                    {{ data.day.split('-').slice(2).join('-') }}
-                  </div>
-                </template>
-              </el-calendar>
-            </template>
-            <template v-else>
-              <!-- 添加返回按钮 -->
-              <div class="profile-header">
-                <el-button
-                    type="text"
-                    @click="showProfileInfo = false"
-                    icon="el-icon-arrow-left"
-                >
-                  返回日历
-                </el-button>
-              </div>
-              <!-- 详细信息展示 -->
-              <div class="profile-detail">
-                <h3>用户详细信息</h3>
-                <el-descriptions :column="1" border>
-                  <el-descriptions-item label="用户名">
-                    {{ userStore.username }}
-                  </el-descriptions-item>
-                  <el-descriptions-item label="邮箱">
-                    {{ userStore.email || '未设置' }}
-                  </el-descriptions-item>
-                  <el-descriptions-item label="余额">
-                    500
-                  </el-descriptions-item>
-                </el-descriptions>
-              </div>
-            </template>
+            <el-calendar v-model="currentDate">
+              <template #date-cell="{ data }">
+                <div :class="{'current-day': isCurrentDay(data.date)}">
+                  {{ data.day.split('-').slice(2).join('-') }}
+                </div>
+              </template>
+            </el-calendar>
           </el-card>
         </div>
       </div>
@@ -441,13 +404,12 @@ import axios from 'axios';
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore() // 先声明
-console.log("User Information:", userStore.avatar);  // 查看 `userStore` 中的数据
+console.log("User Information:", userStore.username);  // 查看 `userStore` 中的数据
 const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后使用
 // 当前日期
 const currentDate = ref(new Date())
 // 当前激活的菜单
 const activeMenu = ref('home') // 默认显示首页
-const showProfileInfo = ref(false); // 控制是否显示基本信息
 // 处理菜单选择
 const handleMenuSelect = (index: string) => {
   // 处理主题切换
@@ -485,14 +447,6 @@ const formatDate = (dateString: string | Date | undefined): string => {
     minute: '2-digit'
   })
 }
-const handleCommand = (command: string) => {
-  if (command === 'logout') {
-    handleLogout();
-  } else if (command === 'profile') {
-    // 切换显示基本信息
-    showProfileInfo.value = true;
-  }
-}
 // 退出登录方法
 const handleLogout = async () => {
   try {
@@ -514,6 +468,12 @@ const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const totalUsers = ref(0)
+
+// 获取存储的用户信息
+const username = userStore.username;
+const avatar = userStore.avatar ? `http://localhost:8080/uploads/${userStore.avatar}` : 'default-avatar.png';
+const registerTime = userStore.registerTime;
+const lastLoginTime = userStore.lastLoginTime;
 
 // API响应处理
 const handleUserListResponse = (res: UserListResponse) => {
@@ -1247,39 +1207,6 @@ watch(authorList, () => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
-}
-
-/* 添加下拉菜单样式 */
-.user-info .el-dropdown {
-  cursor: pointer;
-  margin-right: 10px;
-}
-
-/* 基本信息详情样式 */
-.profile-detail {
-  padding: 20px;
-}
-/* 添加详细信息区域样式 */
-.profile-header {
-  margin-bottom: 20px;
-}
-
-.profile-detail {
-  padding: 20px;
-}
-
-.profile-detail h3 {
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-/* 调整描述列表样式 */
-.el-descriptions {
-  margin-top: 20px;
-}
-
-.el-descriptions-item__label {
-  width: 100px;
 }
 </style>
 <style>
