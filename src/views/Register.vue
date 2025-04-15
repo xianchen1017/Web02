@@ -186,6 +186,7 @@ const registerRules = reactive({
 
 // 修改前端请求
 const handleRegister = async () => {
+  if (event) event.preventDefault();
   try {
     // 校验表单
     await registerFormRef.value?.validate();
@@ -195,10 +196,6 @@ const handleRegister = async () => {
       ElMessage.warning('请上传头像');
       return;
     }
-
-    // 打印表单数据进行调试
-    console.log("注册用户名: ", registerForm.username);
-    console.log("注册密码: ", registerForm.password);
 
     // 构建 FormData
     const formData = new FormData();
@@ -210,6 +207,12 @@ const handleRegister = async () => {
       email: registerForm.email,
       birthday: registerForm.birthDate,
     };
+
+    // 打印表单数据进行调试
+    console.log("注册用户名: ", registerForm.username);
+    console.log("注册密码: ", registerForm.password);
+    console.log("注册邮箱: ", registerForm.email);
+    console.log("日期: ", registerForm.birthDate);
 
     // 将 registerDTO 作为一个整体对象传递给 FormData
     formData.append('registerDTO', JSON.stringify(registerDTO)); // 注意这里要将对象序列化为 JSON 字符串

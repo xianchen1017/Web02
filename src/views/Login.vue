@@ -98,7 +98,8 @@ const loginFormRef = ref<FormInstance>()
 // 登录表单数据
 const loginForm = reactive({
   username: '',
-  password: ''
+  password: '',
+  email: ''
 })
 
 // 表单验证规则
@@ -141,19 +142,21 @@ const handleLogin = async () => {
     // 发送登录请求
     const res = await axios.post('/api/auth/login', {
       username: loginForm.username,  // 用户名
-      password: loginForm.password   // 密码
+      password: loginForm.password,   // 密码
     });
 
     // 打印登录数据进行调试
     console.log("登录用户名: ", loginForm.username);
     console.log("登录密码: ", loginForm.password);
-
+    console.log("注册邮箱: ", loginForm.email);  // 确认是否为有效邮箱s
     // 打印响应数据进行调试
     console.log("登录响应数据: ", res);
 
     // 根据返回的 message 判断登录是否成功
     if (res.data.message === '登录成功') {
       ElMessage.success(res.data?.message || '登录成功');  // 显示成功消息
+      // 更新 loginForm 中的 email
+      loginForm.email = res.data.data.email;  // 将响应中的 email 赋值给 loginForm.email
 
       // 调用 store 中的 setUser 方法
       const userData = res.data.data; // 获取用户数据
@@ -161,6 +164,7 @@ const handleLogin = async () => {
         token: userData,  // 保存 token
         username: userData.username,
         avatar: userData.avatar || '', // 如果有其他用户信息也一起保存
+        email: loginForm.email
         // 保存更多用户信息...
       });  // 设置用户信息到 store 中
 
