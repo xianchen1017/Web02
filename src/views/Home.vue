@@ -38,11 +38,18 @@
     <div class="main-content">
       <!-- 顶部用户信息栏 -->
       <div class="header">
+        <!-- 修改顶部用户信息栏部分 -->
         <div class="user-info">
-          <el-avatar :size="40" :src="userStore.avatar" />
-<!--          <img src="/images/QQ.jpeg" class="icon" />-->
+          <el-dropdown @command="handleCommand">
+            <el-avatar :size="40" :src="userStore.avatar" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">基本信息</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <span class="username">{{ userStore.username }}</span>
-          <el-button @click="handleLogout" size="small" type="danger" plain>退出登录</el-button>
         </div>
         <!-- 动态内容区域 -->
         <div class="content-area">
@@ -119,13 +126,16 @@
         <!-- 右侧日历 -->
         <div class="calendar-section">
           <el-card shadow="hover">
-            <el-calendar v-model="currentDate">
-              <template #date-cell="{ data }">
-                <div :class="{'current-day': isCurrentDay(data.date)}">
-                  {{ data.day.split('-').slice(2).join('-') }}
-                </div>
-              </template>
-            </el-calendar>
+            <template v-if="!showProfileInfo">
+              <el-calendar v-model="currentDate">
+                <template #date-cell="{ data }">
+                  <div :class="{'current-day': isCurrentDay(data.date)}">
+                    {{ data.day.split('-').slice(2).join('-') }}
+                  </div>
+                </template>
+
+              </el-calendar>
+            </template>
           </el-card>
         </div>
       </div>
@@ -411,6 +421,7 @@ const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后
 const currentDate = ref(new Date())
 // 当前激活的菜单
 const activeMenu = ref('home') // 默认显示首页
+const showProfileInfo = ref(false); // 控制是否显示基本信息
 // 处理菜单选择
 const handleMenuSelect = (index: string) => {
   // 处理主题切换
@@ -447,6 +458,14 @@ const formatDate = (dateString: string | Date | undefined): string => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    handleLogout();
+  } else if (command === 'profile') {
+    // 切换显示基本信息
+    showProfileInfo.value = true;
+  }
 }
 // 退出登录方法
 const handleLogout = async () => {
@@ -1202,6 +1221,17 @@ watch(authorList, () => {
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
+}
+
+/* 添加下拉菜单样式 */
+.user-info .el-dropdown {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+/* 基本信息详情样式 */
+.profile-detail {
+  padding: 20px;
 }
 </style>
 <style>
