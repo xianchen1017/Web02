@@ -39,7 +39,8 @@
       <!-- 顶部用户信息栏 -->
       <div class="header">
         <div class="user-info">
-          <el-avatar :size="40" :src="userStore.avatar || 'default-avatar.png'" />
+          <el-avatar :size="40" :src="userStore.avatar" />
+<!--          <img src="/images/QQ.jpeg" class="icon" />-->
           <span class="username">{{ userStore.username }}</span>
           <el-button @click="handleLogout" size="small" type="danger" plain>退出登录</el-button>
         </div>
@@ -108,7 +109,7 @@
         <div class="user-profile">
           <el-card shadow="hover">
             <div class="profile-content">
-              <el-avatar :size="120" :src="userStore.avatar || 'default-avatar.png'" />
+              <el-avatar :size="120" :src="userStore.avatar" />
               <div class="profile-info">
                 <h3>{{ userStore.username }}</h3>
                 </div>
@@ -404,7 +405,7 @@ import axios from 'axios';
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore() // 先声明
-console.log("User Information:", userStore.username);  // 查看 `userStore` 中的数据
+console.log("User Information:", userStore.avatar);  // 查看 `userStore` 中的数据
 const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后使用
 // 当前日期
 const currentDate = ref(new Date())
@@ -468,12 +469,6 @@ const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const totalUsers = ref(0)
-
-// 获取存储的用户信息
-const username = userStore.username;
-const avatar = userStore.avatar ? `http://localhost:8080/uploads/${userStore.avatar}` : 'default-avatar.png';
-const registerTime = userStore.registerTime;
-const lastLoginTime = userStore.lastLoginTime;
 
 // API响应处理
 const handleUserListResponse = (res: UserListResponse) => {
