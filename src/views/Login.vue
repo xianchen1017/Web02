@@ -99,7 +99,8 @@ const loginFormRef = ref<FormInstance>()
 const loginForm = reactive({
   username: '',
   password: '',
-  email: ''
+  email: '',
+  registerTime: '',
 })
 
 // 表单验证规则

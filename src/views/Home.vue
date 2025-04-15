@@ -133,8 +133,34 @@
                     {{ data.day.split('-').slice(2).join('-') }}
                   </div>
                 </template>
-
               </el-calendar>
+            </template>
+            <template v-else>
+              <!-- 添加返回按钮 -->
+              <div class="profile-header">
+                <el-button
+                    type="text"
+                    @click="showProfileInfo = false"
+                    icon="el-icon-arrow-left"
+                >
+                  返回日历
+                </el-button>
+              </div>
+              <!-- 详细信息展示 -->
+              <div class="profile-detail">
+                <h3>用户详细信息</h3>
+                <el-descriptions :column="1" border>
+                  <el-descriptions-item label="用户名">
+                    {{ userStore.username }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="邮箱">
+                    {{ userStore.email || '未设置' }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="余额">
+                    500
+                  </el-descriptions-item>
+                </el-descriptions>
+              </div>
             </template>
           </el-card>
         </div>
@@ -1232,6 +1258,28 @@ watch(authorList, () => {
 /* 基本信息详情样式 */
 .profile-detail {
   padding: 20px;
+}
+/* 添加详细信息区域样式 */
+.profile-header {
+  margin-bottom: 20px;
+}
+
+.profile-detail {
+  padding: 20px;
+}
+
+.profile-detail h3 {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 调整描述列表样式 */
+.el-descriptions {
+  margin-top: 20px;
+}
+
+.el-descriptions-item__label {
+  width: 100px;
 }
 </style>
 <style>
