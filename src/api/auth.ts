@@ -61,7 +61,7 @@ export const logout = async (): Promise<void> => {
 export const getUserInfo = async (token: string): Promise<User> => {
     try {
         // 请求后端获取用户信息
-        const response = await request.get<ResponseResult<User>>('/user/info', {
+        const response = await request.get<ResponseResult<User>>('/user/list', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

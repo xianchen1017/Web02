@@ -15,17 +15,17 @@ const service = axios.create({
 service.interceptors.request.use(config => {
     const userStore = useUserStore();
     const token = userStore.token;
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    // if (token) {
+    //     config.headers.Authorization = `Bearer ${token}`;
+    // }
     return config;
 });
 
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
-    if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-    }
+    // if (token) {
+    //     config.headers['Authorization'] = `Bearer ${token}`;
+    // }
     return config;
 }, (error) => {
     return Promise.reject(error);
@@ -37,10 +37,10 @@ service.interceptors.response.use(
         // 直接返回后端原始数据结构
         return response.data;
     },
-    error => {
-        ElMessage.error(error.response?.data?.message || '请求失败');
-        return Promise.reject(error);
-    }
+    // error => {
+    //     ElMessage.error(error.response?.data?.message || '请求失败');
+    //     return Promise.reject(error);
+    // }
 );
 
 // 请求方法封装

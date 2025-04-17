@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import { useUserStore } from '@/store/user'
 import type {
     User,
     UserListResponse,
@@ -7,6 +8,7 @@ import type {
     ListResult,
     UserFormData
 } from '@/types/user'
+import axios from "axios";
 
 // 获取用户列表
 export const getUserList = (
@@ -14,6 +16,19 @@ export const getUserList = (
 ): Promise<BaseResponse<ListResult<User>>> => {
     return request.get('/user/list', { params })
 }
+const userStore = useUserStore()
+const fetchUserInfo = async () => {
+    try {
+        const res = await axios.get('/api/user/info', {
+            headers: {
+                'Authorization': `Bearer ${userStore.token}`  // 假设你的 token 存储在 userStore 中
+            }
+        });
+        console.log(res.data);
+    } catch (error) {
+        console.error('获取用户信息失败', error);
+    }
+};
 
 // 添加用户
 export const addUser = (

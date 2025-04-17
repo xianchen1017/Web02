@@ -14,6 +14,7 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+
         <!-- 功能菜单 -->
         <el-sub-menu index="functions">
           <template #title>
@@ -23,6 +24,7 @@
           <el-menu-item index="user-management">用户管理</el-menu-item>
           <el-menu-item index="article-management">文章管理</el-menu-item>
         </el-sub-menu>
+
         <!-- 主题切换 -->
         <el-sub-menu index="theme">
           <template #title>
@@ -34,354 +36,352 @@
         </el-sub-menu>
       </el-menu>
     </div>
+
     <!-- 右侧内容区 -->
     <div class="main-content">
       <!-- 顶部用户信息栏 -->
       <div class="header">
         <div class="user-info">
-          <el-avatar :size="40" :src="userStore.avatar || 'default-avatar.png'" />
-          <span class="username">{{ userStore.username }}</span>
-          <el-button @click="handleLogout" size="small" type="danger" plain>退出登录</el-button>
-        </div>
-        <!-- 动态内容区域 -->
-        <div class="content-area">
-          <!-- 首页内容 -->
-          <div v-if="activeMenu === 'home'" class="home-content">
-            <!-- 原有的首页内容 -->
-          </div>
-          <!-- 添加文章编辑对话框 -->
-          <el-dialog
-              v-model="articleDialogVisible"
-              :title="articleDialogTitle"
-              width="50%"
-          >
-            <el-form
-                ref="articleForm"
-                :model="articleFormData"
-                :rules="articleFormRules"
-                label-width="100px"
-            >
-              <el-form-item label="文章标题" prop="title">
-                <el-input v-model="articleFormData.title" placeholder="请输入文章标题" />
-              </el-form-item>
-              <el-form-item label="文章分类" prop="category">
-                <el-select
-                    v-model="articleFormData.category"
-                    placeholder="请选择分类"
-                    style="width: 100%"
-                >
-                  <el-option
-                      v-for="item in categoryOptions"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                  />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="文章状态" prop="status">
-                <el-radio-group v-model="articleFormData.status">
-                  <el-radio label="published">已发布</el-radio>
-                  <el-radio label="draft">草稿</el-radio>
-                </el-radio-group>
-              </el-form-item>
-              <el-form-item label="文章内容" prop="content">
-                <el-input
-                    v-model="articleFormData.content"
-                    type="textarea"
-                    :rows="8"
-                    placeholder="请输入文章内容"
-                />
-              </el-form-item>
-            </el-form>
-            <template #footer>
-    <span class="dialog-footer">
-      <el-button @click="articleDialogVisible = false">取消</el-button>
-      <el-button type="primary" @click="submitArticleForm">确定</el-button>
-    </span>
+          <el-dropdown @command="handleCommand">
+            <el-avatar :size="40" :src="userStore.avatar" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">基本信息</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              </el-dropdown-menu>
             </template>
-          </el-dialog>
+          </el-dropdown>
+          <span class="username">{{ userStore.username }}</span>
         </div>
       </div>
-      <!-- 首页内容 -->
-      <div v-if="activeMenu === 'home'" class="home-content">
-        <!-- 左侧用户信息 -->
-        <div class="user-profile">
-          <el-card shadow="hover">
-            <div class="profile-content">
-              <el-avatar :size="120" :src="userStore.avatar || 'default-avatar.png'" />
-              <div class="profile-info">
-                <h3>{{ userStore.username }}</h3>
+
+      <!-- 动态内容区域 -->
+      <div class="content-area">
+        <!-- 首页内容 -->
+        <div v-if="activeMenu === 'home'" class="home-content">
+          <!-- 左侧用户信息 -->
+          <div class="user-profile">
+            <el-card shadow="hover">
+              <div class="profile-content">
+                <el-avatar :size="120" :src="userStore.avatar" />
+                <div class="profile-info">
+                  <h3>{{ userStore.username }}</h3>
                 </div>
+              </div>
+            </el-card>
+          </div>
+
+          <!-- 右侧日历 -->
+          <div class="calendar-section">
+            <el-card shadow="hover">
+              <template v-if="!showProfileInfo">
+                <el-calendar v-model="currentDate">
+                  <template #date-cell="{ data }">
+                    <div :class="{ 'current-day': isCurrentDay(data.date) }">
+                      {{ data.day.split('-').slice(2).join('-') }}
+                    </div>
+                  </template>
+                </el-calendar>
+              </template>
+              <template v-else>
+                <div class="profile-header">
+                  <el-button
+                      type="text"
+                      @click="showProfileInfo = false"
+                      icon="el-icon-arrow-left"
+                  >
+                    返回日历
+                  </el-button>
+                </div>
+                <div class="profile-detail">
+                  <h3>用户详细信息</h3>
+                  <el-descriptions :column="1" border>
+                    <el-descriptions-item label="用户名">
+                      {{ userStore.username }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="邮箱">
+                      {{ userStore.email || '未设置' }}
+                    </el-descriptions-item>
+                    <el-descriptions-item label="余额">500</el-descriptions-item>
+                  </el-descriptions>
+                </div>
+              </template>
+            </el-card>
+          </div>
+        </div>
+
+        <!-- 用户管理页面 -->
+        <div v-if="activeMenu === 'user-management'" class="user-management-content">
+          <el-card shadow="hover">
+            <div class="user-management-header">
+              <h2>用户管理</h2>
+              <div class="user-management-tools">
+                <el-button type="primary" @click="showAddDialog">
+                  <el-icon><Plus /></el-icon>新增
+                </el-button>
+                <el-input
+                    v-model="searchQuery"
+                    placeholder="请输入搜索内容"
+                    style="width: 300px; margin-left: 10px;"
+                    clearable
+                    @clear="handleSearch"
+                >
+                  <template #append>
+                    <el-button @click="handleSearch">
+                      <el-icon><Search /></el-icon>
+                    </el-button>
+                  </template>
+                </el-input>
+              </div>
+            </div>
+            <el-table :data="contactList" v-loading="loading">
+              <el-table-column prop="id" label="ID" width="80" align="center" />
+              <el-table-column prop="name" label="姓名" width="150" align="center" />
+              <el-table-column prop="province" label="省份" width="120" align="center" />
+              <el-table-column prop="city" label="城市" width="120" align="center" />
+              <el-table-column prop="address" label="地址" width="250" align="center" />
+              <el-table-column prop="postalCode" label="邮政编码" width="120" align="center" />
+              <el-table-column prop="createTime" label="创建时间" width="180" align="center" />
+              <el-table-column label="操作" width="180" align="center" fixed="right">
+                <template #default="scope">
+                  <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                  <el-button size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="pagination-container">
+              <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 30, 50]"
+                  :total="totalUsers"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange"
+              />
             </div>
           </el-card>
         </div>
-        <!-- 右侧日历 -->
-        <div class="calendar-section">
+
+        <!-- 文章管理内容 -->
+        <div v-if="activeMenu === 'article-management'" class="article-management-content">
           <el-card shadow="hover">
-            <el-calendar v-model="currentDate">
-              <template #date-cell="{ data }">
-                <div :class="{'current-day': isCurrentDay(data.date)}">
-                  {{ data.day.split('-').slice(2).join('-') }}
+            <div class="article-management-header">
+              <h2>文章管理</h2>
+            </div>
+            <div class="author-article-container">
+              <!-- 左侧作者列表 -->
+              <div class="author-list">
+                <el-table
+                    :data="authorList"
+                    highlight-current-row
+                    @current-change="handleAuthorChange"
+                    style="width: 100%"
+                    v-loading="authorLoading"
+                >
+                  <el-table-column
+                      prop="username"
+                      label="作者"
+                      width="130"
+                      align="center"
+                      header-align="right"
+                      header-class-name="right-aligned-header"
+                  />
+                  <el-table-column
+                      prop="articleCount"
+                      label="文章数"
+                      width="160"
+                      align="center"
+                      header-align="right"
+                      header-class-name="right-aligned-header"
+                  />
+                  <el-table-column
+                      label="操作"
+                      width="130"
+                      align="center"
+                      header-align="right"
+                      header-class-name="right-aligned-header"
+                  >
+                    <template #default="{ row }">
+                      <el-button
+                          size="small"
+                          @click="enterArticleManagement(row)"
+                      >管理文章</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <div class="pagination-container">
+                  <el-pagination
+                      v-model:current-page="authorCurrentPage"
+                      v-model:page-size="authorPageSize"
+                      :page-sizes="[5, 10, 20]"
+                      :total="totalAuthors"
+                      layout="total, sizes, prev, pager, next, jumper"
+                      @size-change="handleAuthorSizeChange"
+                      @current-change="handleAuthorPageChange"
+                  />
                 </div>
-              </template>
-            </el-calendar>
+              </div>
+
+              <!-- 右侧统计图表 -->
+              <div class="statistics-chart">
+                <div class="chart-title">作者文章统计</div>
+                <div ref="chartRef" style="width: 100%; height: 400px;"></div>
+              </div>
+            </div>
           </el-card>
         </div>
-      </div>
-      <!-- 用户管理页面 -->
-      <div v-if="activeMenu === 'user-management'" class="user-management-content">
-        <el-card shadow="hover">
-          <div class="user-management-header">
-            <h2>用户管理</h2>
-            <div class="user-management-tools">
-              <el-button type="primary" @click="showAddDialog">
-                <el-icon><Plus /></el-icon>新增
+
+        <!-- 文章详情页面 -->
+        <div v-if="activeMenu === 'author-article-detail'" class="author-article-detail">
+          <el-card shadow="hover">
+            <div class="author-info">
+              <el-button type="text" @click="backToArticleManagement">
+                <el-icon><ArrowLeft /></el-icon> 返回文章管理
+              </el-button>
+              <div class="author-profile">
+                <el-avatar :size="60" :src="currentAuthor?.avatar" />
+                <div class="profile-text">
+                  <h3>{{ currentAuthor?.username }}</h3>
+                  <p>共发表 {{ currentAuthor?.articleCount }} 篇文章</p>
+                </div>
+              </div>
+            </div>
+            <div class="article-operations">
+              <el-button type="primary" @click="showAddArticleDialog">
+                <el-icon><Plus /></el-icon>新增文章
               </el-button>
               <el-input
-                  v-model="searchQuery"
-                  placeholder="请输入搜索内容"
+                  v-model="articleSearchQuery"
+                  placeholder="搜索文章标题"
                   style="width: 300px; margin-left: 10px;"
                   clearable
-                  @clear="handleSearch"
+                  @clear="handleArticleSearch"
               >
                 <template #append>
-                  <el-button @click="handleSearch">
+                  <el-button @click="handleArticleSearch">
                     <el-icon><Search /></el-icon>
                   </el-button>
                 </template>
               </el-input>
             </div>
-          </div>
-          <el-table :data="userList" v-loading="loading">
-            <el-table-column prop="id" label="ID" width="80" align="center" />
-            <el-table-column prop="username" label="用户名" width="550" align="center" />
-            <el-table-column prop="email" label="邮箱" width="180" align="center" />
-            <el-table-column prop="phone" label="电话" width="150" align="center" />
-            <el-table-column prop="role" label="角色" width="120" align="center" />
-            <el-table-column prop="status" label="状态" width="100" align="center">
-              <template #default="{row}">
-                <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-                  {{ row.status === 1 ? '启用' : '禁用' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="createTime" label="创建时间" width="180" align="center" />
-            <el-table-column label="操作" width="180" align="center" fixed="right">
-              <template #default="scope">
-                <el-button size="small" @click="handleEdit(scope.row)">编辑</el-button>
-                <el-button
-                    size="small"
-                    type="danger"
-                    @click="handleDelete(scope.row)"
-                >删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div class="pagination-container">
-            <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 30, 50]"
-                :total="totalUsers"
-                layout="total, sizes, prev, pager, next, jumper"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-            />
-          </div>
-        </el-card>
-      </div>
-      <!-- 文章管理内容 -->
-      <div v-if="activeMenu === 'article-management'" class="article-management-content">
-        <el-card shadow="hover">
-          <div class="article-management-header">
-            <h2>文章管理</h2>
-          </div>
-          <div class="author-article-container">
-            <!-- 左侧作者列表 -->
-            <div class="author-list">
-              <el-table
-                  :data="authorList"
-                  highlight-current-row
-                  @current-change="handleAuthorChange"
+            <el-table :data="filteredArticleList" v-loading="articleLoading">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="title" label="标题" width="200" />
+              <el-table-column prop="category" label="分类" width="120" />
+              <el-table-column prop="status" label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'published' ? 'success' : 'warning'">
+                    {{ row.status === 'published' ? '已发布' : '草稿' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="createTime" label="创建时间" width="180" />
+              <el-table-column prop="updateTime" label="更新时间" width="180" />
+              <el-table-column label="操作" width="180">
+                <template #default="scope">
+                  <el-button size="small" @click="editArticle(scope.row)">编辑</el-button>
+                  <el-button
+                      size="small"
+                      type="danger"
+                      @click="deleteArticle(scope.row)"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div class="pagination-container">
+              <el-pagination
+                  v-model:current-page="articleCurrentPage"
+                  v-model:page-size="articlePageSize"
+                  :page-sizes="[5, 10, 20]"
+                  :total="totalArticles"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleArticleSizeChange"
+                  @current-change="handleArticlePageChange"
+              />
+            </div>
+          </el-card>
+        </div>
+
+        <!-- 用户编辑对话框 -->
+        <el-dialog v-model="dialogVisible" :title="dialogTitle" width="50%">
+          <el-form ref="contactForm" :model="formData" :rules="formRules" label-width="100px">
+            <el-form-item label="姓名" prop="name">
+              <el-input v-model="formData.name" placeholder="请输入姓名" />
+            </el-form-item>
+            <el-form-item label="省份" prop="province">
+              <el-input v-model="formData.province" placeholder="请输入省份" />
+            </el-form-item>
+            <el-form-item label="城市" prop="city">
+              <el-input v-model="formData.city" placeholder="请输入城市" />
+            </el-form-item>
+            <el-form-item label="地址" prop="address">
+              <el-input v-model="formData.address" placeholder="请输入地址" />
+            </el-form-item>
+            <el-form-item label="邮政编码" prop="postalCode">
+              <el-input v-model="formData.postalCode" placeholder="请输入邮政编码" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+    <span class="dialog-footer">
+      <el-button @click="dialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="submitForm">确定</el-button>
+    </span>
+          </template>
+        </el-dialog>
+
+        <!-- 文章编辑对话框 -->
+        <el-dialog v-model="articleDialogVisible" :title="articleDialogTitle" width="50%">
+          <el-form
+              ref="articleForm"
+              :model="articleFormData"
+              :rules="articleFormRules"
+              label-width="100px"
+          >
+            <el-form-item label="文章标题" prop="title">
+              <el-input
+                  v-model="articleFormData.title"
+                  placeholder="请输入文章标题"
+              />
+            </el-form-item>
+            <el-form-item label="文章分类" prop="category">
+              <el-select
+                  v-model="articleFormData.category"
+                  placeholder="请选择分类"
                   style="width: 100%"
-                  v-loading="authorLoading"
               >
-                <el-table-column
-                    prop="username"
-                    label="作者"
-                    width="130"
-                    align="center"
-                    header-align="right"
-                    header-class-name="right-aligned-header"
+                <el-option
+                    v-for="item in categoryOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
                 />
-                <el-table-column
-                    prop="articleCount"
-                    label="文章数"
-                    width="160"
-                    align="center"
-                    header-align="right"
-                    header-class-name="right-aligned-header"
-                />
-                <el-table-column
-                    label="操作"
-                    width="130"
-                    align="center"
-                    header-align="right"
-                    header-class-name="right-aligned-header"
-                >
-                  <template #default="{row}">
-                    <el-button
-                        size="small"
-                        @click="enterArticleManagement(row)"
-                    >管理文章</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="authorCurrentPage"
-                    v-model:page-size="authorPageSize"
-                    :page-sizes="[5, 10, 20]"
-                    :total="totalAuthors"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    @size-change="handleAuthorSizeChange"
-                    @current-change="handleAuthorPageChange"
-                />
-              </div>
-            </div>
-            <!-- 右侧统计图表 -->
-            <div class="statistics-chart">
-              <div class="chart-title">作者文章统计</div>
-              <div ref="chartRef" style="width: 100%; height: 400px;"></div>
-            </div>
-          </div>
-        </el-card>
-      </div>
-      <div v-if="activeMenu === 'author-article-detail'" class="author-article-detail">
-        <el-card shadow="hover">
-          <div class="author-info">
-            <el-button type="text" @click="backToArticleManagement">
-              <el-icon><ArrowLeft /></el-icon> 返回文章管理
-            </el-button>
-            <div class="author-profile">
-              <el-avatar :size="60" :src="currentAuthor?.avatar" />
-              <div class="profile-text">
-                <h3>{{ currentAuthor?.username }}</h3>
-                <p>共发表 {{ currentAuthor?.articleCount }} 篇文章</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="article-operations">
-            <el-button type="primary" @click="showAddArticleDialog">
-              <el-icon><Plus /></el-icon>新增文章
-            </el-button>
-            <el-input
-                v-model="articleSearchQuery"
-                placeholder="搜索文章标题"
-                style="width: 300px; margin-left: 10px;"
-                clearable
-                @clear="handleArticleSearch"
-            >
-              <template #append>
-                <el-button @click="handleArticleSearch">
-                  <el-icon><Search /></el-icon>
-                </el-button>
-              </template>
-            </el-input>
-          </div>
-
-          <el-table :data="filteredArticleList" v-loading="articleLoading">
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="title" label="标题" width="200" />
-            <el-table-column prop="category" label="分类" width="120" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="{row}">
-                <el-tag :type="row.status === 'published' ? 'success' : 'warning'">
-                  {{ row.status === 'published' ? '已发布' : '草稿' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="createTime" label="创建时间" width="180" />
-            <el-table-column prop="updateTime" label="更新时间" width="180" />
-            <el-table-column label="操作" width="180">
-              <template #default="scope">
-                <el-button size="small" @click="editArticle(scope.row)">编辑</el-button>
-                <el-button
-                    size="small"
-                    type="danger"
-                    @click="deleteArticle(scope.row)"
-                >删除</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <div class="pagination-container">
-            <el-pagination
-                v-model:current-page="articleCurrentPage"
-                v-model:page-size="articlePageSize"
-                :page-sizes="[5, 10, 20]"
-                :total="totalArticles"
-                layout="total, sizes, prev, pager, next, jumper"
-                @size-change="handleArticleSizeChange"
-                @current-change="handleArticlePageChange"
-            />
-          </div>
-        </el-card>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="文章状态" prop="status">
+              <el-radio-group v-model="articleFormData.status">
+                <el-radio label="published">已发布</el-radio>
+                <el-radio label="draft">草稿</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="文章内容" prop="content">
+              <el-input
+                  v-model="articleFormData.content"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="请输入文章内容"
+              />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button @click="articleDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitArticleForm">确定</el-button>
+            </span>
+          </template>
+        </el-dialog>
       </div>
     </div>
-    <!-- 新增/编辑用户对话框 -->
-    <el-dialog
-        v-model="dialogVisible"
-        :title="dialogTitle"
-        width="50%"
-    >
-      <el-form
-          ref="userForm"
-          :model="formData"
-          :rules="formRules"
-          label-width="100px"
-      >
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="formData.username" placeholder="请输入用户名" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="dialogTitle === '新增用户'">
-          <el-input v-model="formData.password" placeholder="请输入密码" show-password />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="formData.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="formData.phone" placeholder="请输入电话" />
-        </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-select
-              v-model="formData.role"
-              placeholder="请选择角色"
-              style="width: 100%"
-          >
-            <el-option
-                v-for="item in roleOptions"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="formData.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 <script setup lang="ts">
@@ -397,12 +397,9 @@ import {
   Brush,
 } from '@element-plus/icons-vue'
 import { useUserStore } from "@/store/user"
-import {request} from "node:http";
-import {UserListResponse, UserQueryParams} from "@/types/user";
 import { User } from "@/types/user";  // 确保路径正确
-import axios from 'axios';
+import axios, {AxiosError} from 'axios';
 const router = useRouter()
-const route = useRoute()
 const userStore = useUserStore() // 先声明
 console.log("User Information:", userStore.username);  // 查看 `userStore` 中的数据
 const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后使用
@@ -447,6 +444,7 @@ const formatDate = (dateString: string | Date | undefined): string => {
     minute: '2-digit'
   })
 }
+
 // 退出登录方法
 const handleLogout = async () => {
   try {
@@ -457,46 +455,35 @@ const handleLogout = async () => {
     ElMessage.error('退出登录失败')
   }
 }
-interface ListResult {
-  list: User[]
-  total: number
+interface Contact {
+  id?: number; // id 可以是可选的
+  name: string;
+  province: string;
+  city: string;
+  address: string;
+  postalCode: string;
+  createTime?: string; // createTime 也可以是可选的
 }
-const userList = ref<User[]>([])
-const filteredUserList = ref<User[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const totalUsers = ref(0)
-
-// 获取存储的用户信息
-const username = userStore.username;
-const avatar = userStore.avatar ? `http://localhost:8080/uploads/${userStore.avatar}` : 'default-avatar.png';
-const registerTime = userStore.registerTime;
-const lastLoginTime = userStore.lastLoginTime;
-
-// API响应处理
-const handleUserListResponse = (res: UserListResponse) => {
-  userList.value = res.list
-  totalUsers.value = res.total
-}
+const contactList = ref<Contact[]>([]); // 存储联系人列表
+const totalContacts = ref(0); // 存储联系人总数
 // 对话框相关
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增用户')
 // 表单数据 - 使用类型断言确保所有必填字段都有初始值
-const formData = ref<User>({
-  username: '',
-  password: '',
-  email: '',
-  phone: '',
-  role: 'user',
-  status: 1
-} as User)
-// 查询参数
-const queryParams = ref<UserQueryParams>({
-  page: 1,
-  size: 10
-})
+const formData = ref<Contact>({
+  id: 0, // 新增时可以使用 id 作为 0 或者其他默认值
+  name: '',
+  province: '',
+  city: '',
+  address: '',
+  postalCode: '',
+  createTime: '', // 默认创建时间
+});
 // 表单验证规则
 const formRules = ref({
   username: [
@@ -522,143 +509,125 @@ const formRules = ref({
     { required: true, message: '请选择状态', trigger: 'change' }
   ] as Array<Record<string, any>>
 })
-// 角色选项
-const roleOptions = [
-  { value: 'admin', label: '管理员' },
-  { value: 'user', label: '普通用户' },
-  { value: 'editor', label: '编辑' }
-]
-// 获取用户列表
-const fetchUserList = async () => {
-  loading.value = true
+// 获取联系人列表
+const fetchContactList = async () => {
+  loading.value = true;
   try {
-    const res = await axios.get<UserListResponse>('/api/user/list', {
+    const res = await axios.get('/api/contact/list', {
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`
+      },
       params: {
         page: currentPage.value,
         size: pageSize.value,
-        keyword: searchQuery.value
+        searchQuery: searchQuery.value
       }
-    })
-    userList.value = res.data.list
-    totalUsers.value = res.data.total
-  } catch (error) {
-    ElMessage.error('获取用户列表失败')
+    });
+
+    // 适配新的响应格式
+    contactList.value = res.data.data || [];
+    totalUsers.value = res.data.total || 0;
+
+    console.log('联系人列表响应:', res.data);
+    console.log('渲染数据:', contactList.value);
+  } catch (error: any) {
+    console.error('获取联系人列表失败:', error);
+    if (error.response) {
+      const msg = error.response.data?.message || error.response.statusText;
+      ElMessage.error(`获取失败: ${msg}`);
+      console.error('错误详情:', error.response.data);
+    } else {
+      ElMessage.error('网络错误，请检查连接');
+    }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
-// 过滤用户
-const filterUsers = () => {
-  let result = [...userList.value]
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(user =>
-        user.username.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.phone.includes(query) ||
-        user.role.toLowerCase().includes(query)
-    )
-  }
-  totalUsers.value = result.length
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  filteredUserList.value = result.slice(start, end)
-}
+};
 // 搜索处理
 const handleSearch = () => {
   currentPage.value = 1
-  fetchUserList()
+  fetchContactList ()
 }
 // 分页处理
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  fetchUserList()
+  fetchContactList ()
 }
 const handleCurrentChange = (val: number) => {
   currentPage.value = val
-  fetchUserList()
+  fetchContactList ()
 }
 // 显示新增对话框
 const showAddDialog = () => {
-  dialogTitle.value = '新增用户'
+  dialogTitle.value = '新增联系人';
   formData.value = {
-    id: 0,
-    username: '',
-    password: '',
-    email: '',
-    phone: '',
-    role: 'user',
-    status: 1
-  }
-  dialogVisible.value = true
-}
-// 编辑用户
-const handleEdit = (row: User) => {
-  console.log('编辑用户', row);
-  dialogTitle.value = '编辑用户'
-  formData.value = { ...row }
-  dialogVisible.value = true
-}
-// 删除用户
-const handleDelete = async (row: User) => {
+    id: 0, // 新增时可以使用 id 作为 0 或者其他默认值
+    name: '',
+    province: '',
+    city: '',
+    address: '',
+    postalCode: '',
+    createTime: '', // 默认创建时间
+  };
+  dialogVisible.value = true;
+};
+// 编辑联系人
+const handleEdit = (row: any) => {
+  dialogTitle.value = '编辑联系人';
+  formData.value = { ...row };
+  dialogVisible.value = true;
+};
+// 删除联系人
+const handleDelete = async (row: any) => {
   try {
-    await ElMessageBox.confirm('确定要删除该用户吗?', '提示', {
+    await ElMessageBox.confirm('确定要删除该联系人吗?', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
-    })
-    await deleteUser(row.id)
-    ElMessage.success('删除成功')
-    fetchUserList()
+    });
+    await deleteContact(row.id);
+    ElMessage.success('删除成功');
+    fetchContactList();
   } catch (error) {
     // 取消删除
   }
-}
+};
 // 提交表单
 const submitForm = async () => {
   try {
-    if (dialogTitle.value === '新增用户') {
-      await addUser({
-        ...formData.value,
-        password: formData.value.password || '' // 确保密码不为undefined
-      })
+    if (dialogTitle.value === '新增联系人') {
+      await addContact(formData.value);
     } else {
-      await updateUser({
-        ...formData.value,
-        id: formData.value.id as number // 确保编辑时有id
-      })
+      await updateContact(formData.value);
     }
-    dialogVisible.value = false
-    fetchUserList()
+    dialogVisible.value = false;
+    fetchContactList();
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error('操作失败');
   }
-}
+};
+// 新增联系人
+const addContact = async (contact: any) => {
+  await axios.post('/api/contact', contact);
+  ElMessage.success('新增联系人成功');
+};
+
+// 更新联系人
+const updateContact = async (contact: any) => {
+  await axios.put(`/api/contact/${contact.id}`, contact);
+  ElMessage.success('更新联系人成功');
+};
+
+// 删除联系人
+const deleteContact = async (id: number) => {
+  await axios.delete(`/api/contact/${id}`);
+  ElMessage.success('删除联系人成功');
+};
 // 初始化
 onMounted(() => {
   initTheme()
-  fetchUserList()
+  fetchContactList ()
 })
-// API函数
-const getUserList = async (params: { page: number; size: number; keyword?: string }) => {
-  const res = await axios.get<ListResult>('/api/user/list', { params });
-  return res.data; // 正确的数据层级
-};
-// 新增用户
-const addUser = async (user: User) => {
-  await axios.post('/api/user', user)
-  ElMessage.success('新增用户成功')
-}
-// 编辑用户
-const updateUser = async (user: User) => {
-  await axios.put(`/api/user/${user.id}`, user)
-  ElMessage.success('更新用户成功')
-}
-// 删除用户
-const deleteUser = async (id: number) => {
-  await axios.delete(`/api/user/${id}`)
-  ElMessage.success('删除用户成功')
-}
 // 文章管理相关状态
 const authorList = ref<Array<{id: number, username: string, avatar: string, articleCount: number}>>([])
 const authorCurrentPage = ref(1)
@@ -970,7 +939,9 @@ const submitArticleForm = async () => {
     ElMessage.error('操作失败')
   }
 }
-
+const handleCommand = (command: string) => { if (command === 'logout') { handleLogout(); } else if (command === 'profile') { // 切换显示基本信息
+  showProfileInfo.value = true; } } // 退出登录方法
+const showProfileInfo = ref(false); // 控制是否显示基本信息
 // 监听作者列表变化
 watch(authorList, () => {
   nextTick(() => {
