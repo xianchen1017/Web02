@@ -1,4 +1,8 @@
 // src/types/user.ts
+// 确保导入了正确的 LoginResponse 类型
+
+// 你可以继续在这里使用 LoginResponse 类型，确保不重复定义
+
 
 // 用户角色类型
 export type UserRole = 'admin' | 'editor' | 'user' | 'guest'
@@ -25,14 +29,19 @@ export interface User {
 }
 
 // 登录响应类型
+// src/types/loginResponse.ts
+// src/types/loginResponse.ts
 export interface LoginResponse {
-    token: string
-    userInfo: Pick<User, 'id' | 'username' | 'role' | 'avatar' | 'email'>
-    success: boolean; // 登录成功与否
-    message: string; // 提示信息
-    data: any; // 返回的数据（如果有）
+    token: string;
+    refreshToken: string;
+    userInfo: {
+        id: number;
+        username: string;
+        email?: string;
+        avatar?: string;
+        role: string;
+    };
 }
-
 // 分页查询参数
 export interface PaginationParams {
     page: number

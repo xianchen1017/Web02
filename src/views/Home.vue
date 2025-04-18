@@ -486,37 +486,28 @@ const formData = ref<Contact>({
 });
 // 表单验证规则
 const formRules = ref({
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '长度在3到20个字符', trigger: 'blur' }
-  ] as Array<Record<string, any>>,
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '长度在6到20个字符', trigger: 'blur' }
-  ] as Array<Record<string, any>>,
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ] as Array<Record<string, any>>,
-  phone: [
-    { required: true, message: '请输入电话', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-  ] as Array<Record<string, any>>,
-  role: [
-    { required: true, message: '请选择角色', trigger: 'change' }
-  ] as Array<Record<string, any>>,
-  status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
-  ] as Array<Record<string, any>>
-})
+  name: [
+    { required: true, message: '请输入姓名', trigger: 'blur' }
+  ],
+  province: [
+    { required: true, message: '请输入省份', trigger: 'blur' }
+  ],
+  city: [
+    { required: true, message: '请输入城市', trigger: 'blur' }
+  ],
+  address: [
+    { required: true, message: '请输入地址', trigger: 'blur' }
+  ],
+  postalCode: [
+    { required: true, message: '请输入邮政编码', trigger: 'blur' },
+    { pattern: /^\d{6}$/, message: '邮政编码必须是6位数字', trigger: 'blur' }
+  ]
+});
 // 获取联系人列表
 const fetchContactList = async () => {
   loading.value = true;
   try {
     const res = await axios.get('/api/contact/list', {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      },
       params: {
         page: currentPage.value,
         size: pageSize.value,
@@ -578,18 +569,29 @@ const handleEdit = (row: any) => {
   dialogVisible.value = true;
 };
 // 删除联系人
-const handleDelete = async (row: any) => {
+const handleDelete = async (row: Contact) => {
+  console.log('删除ID:', row.id);  // 确认是否传递了正确的ID
   try {
+    if (row.id === undefined) {
+      ElMessage.error('联系人ID无效，删除失败');
+      return; // 退出函数
+    }
+
     await ElMessageBox.confirm('确定要删除该联系人吗?', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     });
-    await deleteContact(row.id);
-    ElMessage.success('删除成功');
-    fetchContactList();
+
+    // 发起删除请求
+    deleteContact(row.id).then(success => {
+      if (success) {
+        // 删除成功后刷新列表或其他操作
+        fetchContactList(); // 假设这是获取联系人列表的方法
+      }
+    });
   } catch (error) {
-    // 取消删除
+    console.log('用户取消删除或发生错误');
   }
 };
 // 提交表单
@@ -608,26 +610,45 @@ const submitForm = async () => {
 };
 // 新增联系人
 const addContact = async (contact: any) => {
-  await axios.post('/api/contact', contact);
+  const response = await axios.post('/api/contact', contact, );
+  console.log("新增联系人信息", response.data)
   ElMessage.success('新增联系人成功');
+  return response.data;
 };
 
 // 更新联系人
 const updateContact = async (contact: any) => {
-  await axios.put(`/api/contact/${contact.id}`, contact);
+  const response = await axios.put(`/api/contact/${contact.id}`, contact, {
+  });
+  console.log("新增联系人信息2", response.data)
   ElMessage.success('更新联系人成功');
+  return response.data;
 };
 
 // 删除联系人
 const deleteContact = async (id: number) => {
-  await axios.delete(`/api/contact/${id}`);
-  ElMessage.success('删除联系人成功');
+  console.log('deleteContact删除ID:', id);
+  try {
+    const response = await axios.delete(`/api/contact/${id}`, );
+    console.log('删除成功', response.data);
+    return true;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      ElMessage.error(`删除失败: ${error.response?.data || error.message}`);
+    } else {
+      ElMessage.error('删除失败: 未知错误');
+    }
+    return false;
+  }
 };
+
+
 // 初始化
 onMounted(() => {
   initTheme()
   fetchContactList ()
 })
+
 // 文章管理相关状态
 const authorList = ref<Array<{id: number, username: string, avatar: string, articleCount: number}>>([])
 const authorCurrentPage = ref(1)

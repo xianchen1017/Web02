@@ -88,7 +88,6 @@ import { ElMessage } from 'element-plus'
 import { FormInstance, FormRules } from 'element-plus'
 import { View, Hide } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
-import { login } from '@/api/auth'
 import axios from "axios"; // 导入模拟的login方法
 
 
@@ -131,7 +130,6 @@ const showPwd = () => {
 // 登录状态
 const loading = ref(false)
 const router = useRouter()
-const route = useRoute()
 const userStore = useUserStore()
 
 

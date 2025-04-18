@@ -5,43 +5,41 @@ import axios from 'axios'
 
 export const register = (data: FormData) => {
     return request.post<ResponseResult<any>>('/auth/register', data, {
-        headers: {
-            'Content-Type': 'multipart/form-data'
-        },
+        // headers: {
+        //     'Content-Type': 'multipart/form-data'
+        // },
     })
 }
-
+// 假设你已经设置了 axios 实例
+export const refreshToken = (refreshToken: string) => {
+    return axios.post('/api/auth/refresh', { refreshToken })
+        .then(response => response.data)
+        .catch(error => {
+            throw error;
+        });
+};
 /**
  * 用户登录
  * @param credentials 登录凭证
  * @returns Promise<LoginResponse>
  */
-export const login = async (credentials: {
-    username: string
-    password: string
-}): Promise<LoginResponse> => {
+// @/api/auth.ts
+// @/api/auth.ts
+export const login = async (credentials: { username: string; password: string }): Promise<LoginResponse> => {
     try {
-        // 发送登录请求到后端
-        const response = await request.post<LoginResponse>('/auth/login', credentials);
+        const response = await axios.post('/auth/login', credentials);
 
-        if (response.data && response.data.success) {
-            // 成功返回数据，返回登录响应数据
-            return response.data;
+        // 假设响应结构为 { success: true, data: { ... } }
+        if (response.data.success) {
+            return response.data; // 返回实际的 LoginResponse 数据
         } else {
-            // 登录失败
             throw new Error('用户名或密码错误');
         }
-    } catch (error: unknown) {
-        // 处理 error 为 unknown 类型
-        if (error instanceof Error) {
-            // 如果 error 是 Error 实例
-            throw new Error(error.message || '登录请求失败');
-        } else {
-            // 处理其他未知类型的 error
-            throw new Error('登录请求失败，发生未知错误');
-        }
+    } catch (error) {
+        throw new Error('登录请求失败');
     }
-}
+};
+
 
 /**
  * 用户登出
@@ -58,20 +56,21 @@ export const logout = async (): Promise<void> => {
  * @param token 用户token
  * @returns Promise<User> 返回完整的用户信息
  */
+// @/api/auth.ts
 export const getUserInfo = async (token: string): Promise<User> => {
     try {
-        // 请求后端获取用户信息
         const response = await request.get<ResponseResult<User>>('/user/list', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
+            // headers: {
+            //     'Authorization': `Bearer ${token}`
+            // }
         });
 
-        return response.data; // 现在可以访问 response.data
+        return response.data;  // 直接返回 data 部分
     } catch (error) {
         throw new Error('无法获取用户信息');
     }
-}
+};
+
 
 
 /**

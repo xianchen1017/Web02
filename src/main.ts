@@ -16,7 +16,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component)
 }
 
-const token = localStorage.getItem('token');
+// const token = localStorage.getItem('token');
 // if (token) {
 //     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 // }

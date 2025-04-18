@@ -1,5 +1,4 @@
 import request from '@/utils/request'
-import { useUserStore } from '@/store/user'
 import type {
     User,
     UserListResponse,
@@ -16,13 +15,12 @@ export const getUserList = (
 ): Promise<BaseResponse<ListResult<User>>> => {
     return request.get('/user/list', { params })
 }
-const userStore = useUserStore()
 const fetchUserInfo = async () => {
     try {
         const res = await axios.get('/api/user/info', {
-            headers: {
-                'Authorization': `Bearer ${userStore.token}`  // 假设你的 token 存储在 userStore 中
-            }
+            // headers: {
+            //     'Authorization': `Bearer ${userStore.token}`  // 假设你的 token 存储在 userStore 中
+            // }
         });
         console.log(res.data);
     } catch (error) {

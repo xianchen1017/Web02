@@ -59,20 +59,6 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
-  if (!userStore.isInitialized) {
-    await userStore.initUser()
-  }
-
-  // 初始化用户状态（添加错误处理）
-  try {
-    if (!userStore.isInitialized) {
-      await userStore.initUser()
-    }
-  } catch (error) {
-    console.error('用户初始化失败:', error)
-    return next('/login')
-  }
-
   // 类型安全的状态检查
   const isAuthenticated = userStore.isAuthenticated()
   const userRole = userStore.role as UserRole // 显式类型声明
