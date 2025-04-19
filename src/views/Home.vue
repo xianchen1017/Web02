@@ -625,8 +625,8 @@ const addContact = async (contact: any) => {
 const updateContact = async (contact: any) => {
   const response = await axios.put(`/api/contact/${contact.id}`, contact, {
   });
-  console.log("新增联系人信息2", response.data)
   ElMessage.success('更新联系人成功');
+  console.log("更改联系人信息", response.data)
   return response.data;
 };
 
