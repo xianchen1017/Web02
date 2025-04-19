@@ -570,11 +570,11 @@ const handleEdit = (row: any) => {
 };
 // 删除联系人
 const handleDelete = async (row: Contact) => {
-  console.log('删除ID:', row.id);  // 确认是否传递了正确的ID
+  console.log('删除ID:', row.id);
   try {
     if (row.id === undefined) {
       ElMessage.error('联系人ID无效，删除失败');
-      return; // 退出函数
+      return;
     }
 
     await ElMessageBox.confirm('确定要删除该联系人吗?', '提示', {
@@ -582,18 +582,23 @@ const handleDelete = async (row: Contact) => {
       cancelButtonText: '取消',
       type: 'warning'
     });
+    console.log("id的类型是",typeof row.id); // 查看类型
+    // 确保传递的是 Long 类型 ID
+    const success = await deleteContact(String(row.id));  // 转换为 String 后传递
 
-    // 发起删除请求
-    deleteContact(row.id).then(success => {
-      if (success) {
-        // 删除成功后刷新列表或其他操作
-        fetchContactList(); // 假设这是获取联系人列表的方法
-      }
-    });
+    if (success) {
+      ElMessage.success('删除成功');
+      // 刷新列表
+      fetchContactList();
+    }
   } catch (error) {
-    console.log('用户取消删除或发生错误');
+    // 用户点击取消时，会进入catch，不需要处理
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败');
+    }
   }
 };
+
 // 提交表单
 const submitForm = async () => {
   try {
@@ -625,11 +630,12 @@ const updateContact = async (contact: any) => {
   return response.data;
 };
 
-// 删除联系人
-const deleteContact = async (id: number) => {
-  console.log('deleteContact删除ID:', id);
+// 删除联系人API调用
+const deleteContact = async (id: string) => {
+  console.log("deleteContact删除ID:", id, "id的类型是", typeof id);
   try {
-    const response = await axios.delete(`/api/contact/${id}`, );
+    // 确保传递的是 Long 类型 ID
+    const response = await axios.delete(`/api/contact/${id}`);
     console.log('删除成功', response.data);
     return true;
   } catch (error) {
@@ -641,7 +647,6 @@ const deleteContact = async (id: number) => {
     return false;
   }
 };
-
 
 // 初始化
 onMounted(() => {
