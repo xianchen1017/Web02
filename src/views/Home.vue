@@ -641,7 +641,11 @@ const fetchArticles = async () => {
         search: articleSearchQuery.value
       }
     });
-    articleList.value = response.data.articles; // 确保设置了原始列表
+    // 添加index属性
+    articleList.value = response.data.articles.map((article: any, index: number) => ({
+      ...article,
+      index: (articleCurrentPage.value - 1) * articlePageSize.value + index + 1
+    }));
     filteredArticleList.value = response.data.articles;
     totalArticles.value = response.data.totalItems;
     filterArticles(); // 应用过滤
@@ -828,7 +832,15 @@ const deleteArticle = async (row: Article) => {
     });
     await axios.delete(`/api/article/${row.id}`);
     ElMessage.success('删除成功');
-    fetchArticles();
+    // 同时获取最新的作者信息
+    if (currentAuthor.value) {
+      const authorResponse = await axios.get(`/api/authors/stats`);
+      const updatedAuthor = authorResponse.data.find((a: any) => a.id === currentAuthor.value?.id);
+      if (updatedAuthor) {
+        currentAuthor.value.articleCount = updatedAuthor.articleCount;
+      }
+    }
+    fetchArticles(); // 重新加载文章列表
   } catch (error) {
     // 取消删除
   }
@@ -836,22 +848,34 @@ const deleteArticle = async (row: Article) => {
 // 提交文章表单
 const submitArticleForm = async () => {
   try {
-    if (articleFormData.value.id === 0) {
-      await axios.post('/api/article', {
-        title: articleFormData.value.title,
-        content: articleFormData.value.content,
-        authorId: articleFormData.value.authorId
+    const form = articleFormData.value;
+    let response;
+
+    if (form.id === 0) {
+      // 创建文章
+      response = await axios.post('/api/article', {
+        title: form.title,
+        content: form.content,
+        authorId: currentAuthor.value?.id
       });
-      ElMessage.success('新增文章成功');
     } else {
-      await axios.put(`/api/article/${articleFormData.value.id}`, {
-        title: articleFormData.value.title,
-        content: articleFormData.value.content
+      // 更新文章 - 发送完整文章对象
+      response = await axios.put(`/api/article/${form.id}`, {
+        id: form.id,
+        title: form.title,
+        content: form.content,
+        authorId: currentAuthor.value?.id // 确保包含authorId
       });
-      ElMessage.success('修改文章成功');
     }
-    articleDialogVisible.value = false;
-    fetchArticles();
+
+    // 检查实际响应状态
+    if (response.status >= 200 && response.status < 300) {
+      ElMessage.success('操作成功');
+      articleDialogVisible.value = false;
+      fetchArticles(); // 重新加载数据
+    } else {
+      throw new Error(response.data?.message || '操作失败');
+    }
   } catch (error) {
     ElMessage.error('操作失败');
   }
