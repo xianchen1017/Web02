@@ -209,7 +209,6 @@
               </div>
               <!-- 右侧统计图表 -->
               <div class="statistics-chart">
-                <div class="chart-title">作者文章统计</div>
                 <div ref="chartRef" style="width: 100%; height: 400px;"></div>
               </div>
             </div>
@@ -1111,42 +1110,71 @@ watch(authorList, () => {
 .yellow-theme .el-sub-menu__title:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
-/* 文章管理容器样式 */
+/* 文章管理容器样式 - 改进版 */
+.article-management-content {
+  padding: 20px;
+}
+
 .author-article-container {
   display: flex;
-  gap: 20px;
+  gap: 30px; /* 增加间距 */
   margin-top: 20px;
+  flex-wrap: wrap; /* 允许在小屏幕上换行 */
 }
 /* 统一表头右对齐样式 */
 .right-aligned-header .cell {
   justify-content: flex-end !important;
   padding-right: 15px !important;
 }
-/* 保持表格整体宽度 */
-.author-list .el-table {
-  width: 100%;
-}
+/* 作者列表样式 - 改进版 */
 .author-list {
   flex: 1;
   min-width: 400px;
-}
-.statistics-chart {
-  border: 2px solid red !important; /* 检查容器是否可见 */
-  height: 400px;
-  width: 100%;
-  flex: 2;
-  min-width: 500px;
+  max-width: 600px; /* 限制最大宽度 */
   background: #fff;
   padding: 20px;
   border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
+/* 统计图表样式 - 改进版 */
+.statistics-chart {
+  flex: 2;
+  min-width: 500px;
+  min-height: 500px; /* 增加高度 */
+  background: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+/* 图表标题样式 */
 .chart-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   text-align: center;
   color: #333;
+}
+/* 图表容器样式 */
+.chart-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .author-article-container {
+    flex-direction: column;
+  }
+
+  .author-list,
+  .statistics-chart {
+    min-width: 100%;
+    max-width: 100%;
+  }
 }
 /* 作者文章详情区域 */
 .author-article-detail {
