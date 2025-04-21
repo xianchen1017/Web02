@@ -602,15 +602,13 @@ const fetchAuthors = async () => {
         size: authorPageSize.value
       }
     })
-    console.log('作者API响应:', response.data); // 调试输出
-
-    // 提取并处理作者数据
+    console.log('API响应数据:', response.data)
     const rawData = response.data
     let authorsData = []
     if (rawData.authors) {
       authorsData = rawData.authors.map((author: Author) => ({
         ...author
-      }));
+      }))
     }
 
     authorList.value = authorsData.map((author: Author, index: number) => ({
@@ -618,10 +616,17 @@ const fetchAuthors = async () => {
       index: (authorCurrentPage.value - 1) * authorPageSize.value + index + 1
     }))
     totalAuthors.value = rawData.totalItems || 0
-    // 更新图表
-    if (chartRef.value && !chartInstance) {
-      updateChart()
-    }
+    console.log('处理后的作者数据:', authorList.value)
+    // 使用 nextTick 确保 DOM 更新完成
+    nextTick(() => {
+      if (!chartInstance) {
+        console.log('图表实例不存在，尝试初始化')
+        initChart()
+      } else {
+        console.log('已有图表实例，直接更新')
+        updateChart()
+      }
+    })
   } catch (error) {
     console.error('获取作者列表失败:', error)
     ElMessage.error('获取作者列表失败: ' + (error as Error).message)
@@ -664,46 +669,91 @@ const handleAuthorPageChange = (page: number) => {
   fetchAuthors()
 }
 // 更新图表
+// 更新图表函数 - 改为条形图
 const updateChart = () => {
-  if (!chartInstance) return
-  const chartData = authorList.value.map(author => ({
-    name: author.username,
-    value: author.articleCount
-  }))
+  console.log('尝试更新图表...');
+  console.log('当前图表实例:', chartInstance);
+  console.log('当前作者数据:', authorList.value);
 
-  if (authorList.value.length > 0) {
-    updateChart();  // 只有在数据存在时才更新图表
-  } else {
-    console.log('没有数据，无法显示图表');
+  if (!chartInstance) {
+    console.log('图表实例不存在，无法更新');
+    return;
   }
+
+  if (!authorList.value || !authorList.value.length) {
+    console.log('作者数据为空，无法更新图表');
+    return;
+  }
+// 调试输出原始数据
+  console.log('原始作者数据:', JSON.parse(JSON.stringify(authorList.value)));
+
+  // 准备条形图数据
+  const xAxisData = authorList.value.map(author => {
+    console.log('当前作者:', author); // 调试每个作者对象
+    return author.username || '未知作者';  // 关键修改点
+  });
+
+  const seriesData = authorList.value.map(author => author.articleCount || 0);
+
+  console.log('生成图表数据:', {
+    xAxis: xAxisData,
+    y: seriesData
+  });
 
   const option = {
     title: {
-      text: '作者文章统计',
-      subtext: '基于作者的文章数量',
+      text: '作者文章数量统计',
       left: 'center'
     },
     tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} 文章'
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
     },
     xAxis: {
       type: 'category',
-      data: authorList.value.map(author => author.username)
+      data: xAxisData,
+      axisLabel: {
+        rotate: 30,
+        interval: 0,
+        formatter: function(value:any) {
+          console.log('当前渲染标签:', value); // 调试标签值
+          return value;
+        }
+      }
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      name: '文章数量'
     },
-    series: [
-      {
-        name: '文章数',
-        type: 'bar',
-        data: chartData
+    series: [{
+      type: 'bar',
+      data: seriesData,
+      label: {
+        show: true,
+        formatter: function(params:any) {
+          // 调试标签值
+          console.log('数据标签:', params.value);
+          return params.value;
+        }
       }
-    ]
+    }]
+  };
+
+  try {
+    chartInstance.setOption(option);
+    console.log('条形图选项设置成功');
+  } catch (error) {
+    console.error('设置图表选项失败:', error);
   }
-  chartInstance.setOption(option)
-}
+};
 // 进入文章管理页面
 const manageArticles = (author: { id: number, username: string, avatar: string, articleCount: number }) => {
   currentAuthor.value = author
@@ -717,11 +767,14 @@ const backToAuthorList = () => {
 }
 // 页面初始化时获取数据
 onMounted(() => {
-  // 使用 nextTick 确保 DOM 完成更新后再初始化图表
+  console.log('开始获取作者数据并初始化图表')
   nextTick(() => {
-    initChart();  // 初始化图表
-  });
-  fetchAuthors()
+    console.log('DOM更新完成，检查图表状态')
+    fetchAuthors().then(() => {
+      // 再次确保数据加载完成
+      nextTick(initChart)
+    })
+  })
 })
 const filteredArticleList = ref<Article[]>([]);
 const articleSearchQuery = ref('');
@@ -745,17 +798,24 @@ const articleFormRules = {
 }
 // 初始化图表
 const initChart = () => {
+  console.log('尝试初始化图表...')
+  console.log('chartRef.value:', chartRef.value)
+  console.log('chartInstance:', chartInstance)
+  console.log('当前DOM结构:', document.querySelector('.statistics-chart')?.outerHTML)
+  // 检查容器实际尺寸
 
-  if (chartRef.value && !chartInstance) {
-    chartInstance = echarts.init(chartRef.value)
-    // 在 initChart 函数中添加 resize 事件监听
-    window.addEventListener('resize', () => {
-      if (chartInstance) {
-        chartInstance.resize();  // 窗口大小变化时调整图表大小
-      }
-    });
-
-  }
+  let retry = 0;
+  const tryInit = () => {
+    if (chartRef.value) {
+      console.log('成功获取DOM引用');
+      chartInstance = echarts.init(chartRef.value);
+      updateChart();
+    } else if (retry < 5) {
+      retry++;
+      setTimeout(tryInit, 20); // 每20ms重试一次
+    }
+  };
+  tryInit();
 }
 // 处理作者选择变化
 const handleAuthorChange = (author: any) => {
@@ -883,11 +943,16 @@ const submitArticleForm = async () => {
 const handleCommand = (command: string) => { if (command === 'logout') { handleLogout(); } else if (command === 'profile') { // 切换显示基本信息
   showProfileInfo.value = true; } } // 退出登录方法
 const showProfileInfo = ref(false); // 控制是否显示基本信息
-// 监听作者列表变化
+// 添加对 chartRef 的监听
+watch(chartRef, (newVal) => {
+  if (newVal && !chartInstance) {
+    initChart()
+  }
+}, { immediate: true })
+
+// 同时监听 authorList 变化
 watch(authorList, () => {
-  nextTick(() => {
-    updateChart()
-  })
+  updateChart()
 }, { deep: true })
 </script>
 <style scoped>
@@ -1066,6 +1131,9 @@ watch(authorList, () => {
   min-width: 400px;
 }
 .statistics-chart {
+  border: 2px solid red !important; /* 检查容器是否可见 */
+  height: 400px;
+  width: 100%;
   flex: 2;
   min-width: 500px;
   background: #fff;
