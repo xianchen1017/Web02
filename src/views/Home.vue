@@ -200,7 +200,7 @@
                 </el-table>
                 <el-pagination
                     v-model:current-page="authorCurrentPage"
-                    v-model:page-size="authorPageSize"
+                    v-mode1l:page-size="authorPageSize"
                     :total="totalAuthors"
                     layout="total, sizes, prev, pager, next, jumper"
                     @size-change="handleAuthorSizeChange"
@@ -245,7 +245,7 @@
             <el-table :data="filteredArticleList" v-loading="articleLoading">
               <el-table-column prop="index" label="序号" width="80" align="center" />
               <el-table-column prop="title" label="文章标题" width="200" align="center" />
-              <el-table-column prop="content" label="文章内容" width="200" align="center" />
+              <el-table-column prop="content" label="文章内容" show-overflow-tooltip width="300" align="center" />
               <el-table-column label="操作" width="200" align="center">
                 <template #default="scope">
                   <el-button size="small" @click="editArticle(scope.row)">修改</el-button>
@@ -305,10 +305,10 @@
             </el-form-item>
           </el-form>
           <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="articleDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="submitArticleForm">确定</el-button>
-          </span>
+            <span class="dialog-footer">
+              <el-button @click="articleDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitArticleForm">确定</el-button>
+            </span>
           </template>
         </el-dialog>
       </div>
@@ -580,17 +580,17 @@ const totalAuthors = ref(0)
 const authorLoading = ref(false)
 const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
+// 文章接口定义
 interface Article {
   id: number;
+  index: number;
   title: string;
   content: string;
-  category: string;
 }
 // 声明文章列表
 const articleList = ref<Article[]>([]);
 // 当前选中的作者
 const currentAuthor = ref<{id: number, username: string, avatar: string, articleCount: number} | null>(null)
-// 文章列表相关状态
 
 // 获取作者列表数据
 const fetchAuthors = async () => {
@@ -602,19 +602,8 @@ const fetchAuthors = async () => {
         size: authorPageSize.value
       }
     })
+    console.log('作者API响应:', response.data); // 调试输出
 
-// 处理递归嵌套的数据
-    const processAuthor = (author: Author): Author => {
-      if (!author) return author
-      // 创建一个新的作者对象，去除articles字段
-      const processed: Author = {
-        id: author.id,
-        username: author.username,
-        avatar: author.avatar,
-        articleCount: author.articleCount
-      }
-      return processed
-    }
     // 提取并处理作者数据
     const rawData = response.data
     let authorsData = []
@@ -645,16 +634,25 @@ const fetchArticles = async () => {
   if (!currentAuthor.value) return;
   articleLoading.value = true;
   try {
-    const response = await axios.get(`/api/authors/${currentAuthor.value.id}/articles`);
-    filteredArticleList.value = response.data;
-    totalArticles.value = response.data.length;
-    console.log("文章数据", response.data)
+    const response = await axios.get(`/api/author/${currentAuthor.value.id}/articles`, {
+      params: {
+        page: articleCurrentPage.value,
+        size: articlePageSize.value,
+        search: articleSearchQuery.value
+      }
+    });
+    articleList.value = response.data.articles; // 确保设置了原始列表
+    filteredArticleList.value = response.data.articles;
+    totalArticles.value = response.data.totalItems;
+    filterArticles(); // 应用过滤
+    console.log('获取到的文章数据:', response.data.articles); // 检查数据是否正确
   } catch (error) {
+    console.error('获取文章失败:', error);
     ElMessage.error('获取文章失败');
   } finally {
     articleLoading.value = false;
   }
-};
+}
 
 // 处理作者列表分页变化
 const handleAuthorPageChange = (page: number) => {
@@ -706,6 +704,7 @@ const updateChart = () => {
 const manageArticles = (author: { id: number, username: string, avatar: string, articleCount: number }) => {
   currentAuthor.value = author
   activeMenu.value = 'author-article-detail'  // 更新菜单，切换到文章管理页面
+  fetchArticles()
 }
 // 返回到作者列表页面
 const backToAuthorList = () => {
@@ -729,41 +728,16 @@ const totalArticles = ref(0);
 // 文章对话框相关
 const articleDialogVisible = ref(false)
 const articleDialogTitle = ref('新增文章')
-const articleFormData = ref({ id: 0, title: '', content: '' });
-
+const articleFormData = ref({
+  id: 0,
+  title: '',
+  content: '',
+  authorId: 0
+});
 // 文章表单验证规则
 const articleFormRules = {
   title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
   content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }],
-}
-// 获取作者列表
-const fetchAuthorList = async () => {
-  authorLoading.value = true
-  try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 模拟数据
-    const mockAuthors = Array.from({length: 20}, (_, i) => ({
-      id: i + 1,
-      username: `作者${i + 1}`,
-      avatar: `https://randomuser.me/api/portraits/${i % 2 === 0 ? 'men' : 'women'}/${i + 1}.jpg`,
-      articleCount: Math.floor(Math.random() * 20) + 1
-    }))
-    // 分页处理
-    const start = (authorCurrentPage.value - 1) * authorPageSize.value
-    const end = start + authorPageSize.value
-    authorList.value = mockAuthors.slice(start, end)
-    totalAuthors.value = mockAuthors.length
-    // 初始化图表
-    if (authorList.value.length > 0) {
-      updateChart()
-    }
-  } catch (error) {
-    console.error('获取作者列表失败:', error)
-    ElMessage.error('获取作者列表失败')
-  } finally {
-    authorLoading.value = false
-  }
 }
 // 初始化图表
 const initChart = () => {
@@ -783,44 +757,6 @@ const initChart = () => {
 const handleAuthorChange = (author: any) => {
   currentAuthor.value = author
 }
-// 进入文章管理
-const enterArticleManagement = (author: any) => {
-  currentAuthor.value = author
-  activeMenu.value = 'author-article-detail'
-  fetchArticlesByAuthor()
-}
-// 返回文章管理主界面
-const backToArticleManagement = () => {
-  activeMenu.value = 'article-management'
-  currentAuthor.value = null
-}
-// 获取作者的文章列表
-const fetchArticlesByAuthor = async () => {
-  if (!currentAuthor.value) return
-  articleLoading.value = true
-  try {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // 模拟数据
-    const mockArticles = Array.from({length: currentAuthor.value.articleCount}, (_, i) => ({
-      id: i + 1,
-      title: `文章标题${i + 1}`,
-      content: `这是${currentAuthor.value?.username}的第${i + 1}篇文章内容...`,
-      category: ['technology', 'life', 'travel', 'other'][Math.floor(Math.random() * 4)],
-      status: Math.random() > 0.3 ? 'published' : 'draft',
-      createTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updateTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-    }))
-    articleList.value = mockArticles
-    totalArticles.value = mockArticles.length
-    filterArticles()
-  } catch (error) {
-    console.error('获取文章列表失败:', error)
-    ElMessage.error('获取文章列表失败')
-  } finally {
-    articleLoading.value = false
-  }
-}
 // 过滤文章
 const filterArticles = () => {
   let result = [...articleList.value]
@@ -828,14 +764,19 @@ const filterArticles = () => {
     const query = articleSearchQuery.value.toLowerCase()
     result = result.filter(article =>
         article.title.toLowerCase().includes(query) ||
-        article.content.toLowerCase().includes(query) ||
-        article.category.toLowerCase().includes(query)
+        article.content.toLowerCase().includes(query)
     )
   }
   totalArticles.value = result.length
   const start = (articleCurrentPage.value - 1) * articlePageSize.value
   const end = start + articlePageSize.value
   filteredArticleList.value = result.slice(start, end)
+  console.log('过滤结果:', { // 调试输出
+    query: articleSearchQuery.value,
+    total: totalArticles.value,
+    showing: filteredArticleList.value.length,
+    currentPage: articleCurrentPage.value
+  })
 }
 // 文章搜索处理
 const handleArticleSearch = () => {
@@ -854,34 +795,40 @@ const handleArticlePageChange = (val: number) => {
 // 作者分页处理
 const handleAuthorSizeChange = (val: number) => {
   authorPageSize.value = val
-  fetchAuthorList()
 }
 // 显示新增文章对话框
 const showAddArticleDialog = () => {
-  articleFormData.value = { id: 0, title: '', content: '' };
+  articleFormData.value = {
+    id: 0,
+    title: '',
+    content: '',
+    authorId: currentAuthor.value?.id || 0
+  };
   articleDialogTitle.value = '新增文章';
   articleDialogVisible.value = true;
-};
+}
 // 编辑文章
-const editArticle = (row: any) => {
-  articleDialogTitle.value = '编辑文章'
-  articleFormData.value = { ...row }
-  articleDialogVisible.value = true
+const editArticle = (row: Article) => {
+  articleDialogTitle.value = '编辑文章';
+  articleFormData.value = {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    authorId: currentAuthor.value?.id || 0
+  };
+  articleDialogVisible.value = true;
 }
 // 删除文章
-const deleteArticle = async (row: any) => {
+const deleteArticle = async (row: Article) => {
   try {
     await ElMessageBox.confirm('确定要删除该文章吗?', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
-    })
-    // 模拟删除
-    articleList.value = articleList.value.filter(article => article.id !== row.id)
-    currentAuthor.value!.articleCount -= 1
-    totalArticles.value -= 1
-    filterArticles()
-    ElMessage.success('删除成功')
+    });
+    await axios.delete(`/api/article/${row.id}`);
+    ElMessage.success('删除成功');
+    fetchArticles();
   } catch (error) {
     // 取消删除
   }
@@ -890,10 +837,17 @@ const deleteArticle = async (row: any) => {
 const submitArticleForm = async () => {
   try {
     if (articleFormData.value.id === 0) {
-      await axios.post('/api/articles', articleFormData.value);
+      await axios.post('/api/article', {
+        title: articleFormData.value.title,
+        content: articleFormData.value.content,
+        authorId: articleFormData.value.authorId
+      });
       ElMessage.success('新增文章成功');
     } else {
-      await axios.put(`/api/articles/${articleFormData.value.id}`, articleFormData.value);
+      await axios.put(`/api/article/${articleFormData.value.id}`, {
+        title: articleFormData.value.title,
+        content: articleFormData.value.content
+      });
       ElMessage.success('修改文章成功');
     }
     articleDialogVisible.value = false;
