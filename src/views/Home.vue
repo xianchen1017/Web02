@@ -316,7 +316,7 @@
 </template>
 <script setup lang="ts">
 import * as echarts from 'echarts'
-import { onMounted, ref, watch, nextTick } from 'vue'
+import {onMounted, ref, watch, nextTick, onBeforeUnmount} from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, Plus, Search } from '@element-plus/icons-vue'
@@ -331,6 +331,7 @@ import { User } from "@/types/user";  // 确保路径正确
 import axios, {AxiosError} from 'axios';
 const router = useRouter()
 const userStore = useUserStore() // 先声明
+console.log('userStore:',userStore)
 const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后使用
 // 当前日期
 const currentDate = ref(new Date())
@@ -670,10 +671,6 @@ const handleAuthorPageChange = (page: number) => {
 // 更新图表
 // 更新图表函数 - 改为条形图
 const updateChart = () => {
-  console.log('尝试更新图表...');
-  console.log('当前图表实例:', chartInstance);
-  console.log('当前作者数据:', authorList.value);
-
   if (!chartInstance) {
     console.log('图表实例不存在，无法更新');
     return;
@@ -734,7 +731,7 @@ const updateChart = () => {
     },
     series: [{
       type: 'bar',
-      data: seriesData,
+      data: authorList.value.map(author => author.articleCount || 0),
       label: {
         show: true,
         formatter: function(params:any) {
@@ -763,6 +760,16 @@ const manageArticles = (author: { id: number, username: string, avatar: string, 
 const backToAuthorList = () => {
   currentAuthor.value = null
   activeMenu.value = 'article-management'
+
+  // 确保图表重新初始化
+  nextTick(() => {
+    if (chartInstance) {
+      chartInstance.dispose();
+      chartInstance = null;
+    }
+    initChart();
+    fetchAuthors(); // 重新获取作者数据
+  })
 }
 // 页面初始化时获取数据
 onMounted(() => {
@@ -797,12 +804,12 @@ const articleFormRules = {
 }
 // 初始化图表
 const initChart = () => {
-  console.log('尝试初始化图表...')
-  console.log('chartRef.value:', chartRef.value)
-  console.log('chartInstance:', chartInstance)
-  console.log('当前DOM结构:', document.querySelector('.statistics-chart')?.outerHTML)
-  // 检查容器实际尺寸
+  if (!chartRef.value) return;
 
+  // 先销毁旧实例
+  if (chartInstance) {
+    chartInstance.dispose();
+  }
   let retry = 0;
   const tryInit = () => {
     if (chartRef.value) {
@@ -891,6 +898,14 @@ const deleteArticle = async (row: Article) => {
     });
     await axios.delete(`/api/article/${row.id}`);
     ElMessage.success('删除成功');
+    // 1. 重新获取当前作者的文章列表
+    await fetchArticles();
+    // 2. 更新当前作者的文章数量
+    if (currentAuthor.value) {
+      currentAuthor.value.articleCount -= 1;
+    }
+    // 3. 重新获取全部作者数据以更新图表
+    await fetchAuthors();
     // 同时获取最新的作者信息
     if (currentAuthor.value) {
       const authorResponse = await axios.get(`/api/authors/stats`);
@@ -942,6 +957,16 @@ const submitArticleForm = async () => {
 const handleCommand = (command: string) => { if (command === 'logout') { handleLogout(); } else if (command === 'profile') { // 切换显示基本信息
   showProfileInfo.value = true; } } // 退出登录方法
 const showProfileInfo = ref(false); // 控制是否显示基本信息
+
+onBeforeUnmount(() => {
+  if (chartInstance) {
+    chartInstance.dispose();
+    chartInstance = null;
+  }
+  window.removeEventListener('resize', () => {
+    chartInstance?.resize();
+  });
+});
 // 添加对 chartRef 的监听
 watch(chartRef, (newVal) => {
   if (newVal && !chartInstance) {
