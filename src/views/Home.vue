@@ -14,7 +14,6 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-
         <!-- 功能菜单 -->
         <el-sub-menu index="functions">
           <template #title>
@@ -24,7 +23,6 @@
           <el-menu-item index="user-management">用户管理</el-menu-item>
           <el-menu-item index="article-management">文章管理</el-menu-item>
         </el-sub-menu>
-
         <!-- 主题切换 -->
         <el-sub-menu index="theme">
           <template #title>
@@ -36,7 +34,6 @@
         </el-sub-menu>
       </el-menu>
     </div>
-
     <!-- 右侧内容区 -->
     <div class="main-content">
       <!-- 顶部用户信息栏 -->
@@ -54,7 +51,6 @@
           <span class="username">{{ userStore.username }}</span>
         </div>
       </div>
-
       <!-- 动态内容区域 -->
       <div class="content-area">
         <!-- 首页内容 -->
@@ -70,7 +66,6 @@
               </div>
             </el-card>
           </div>
-
           <!-- 右侧日历 -->
           <div class="calendar-section">
             <el-card shadow="hover">
@@ -109,7 +104,6 @@
             </el-card>
           </div>
         </div>
-
         <!-- 用户管理页面 -->
         <div v-if="activeMenu === 'user-management'" class="user-management-content">
           <el-card shadow="hover">
@@ -162,15 +156,13 @@
             </div>
           </el-card>
         </div>
-
         <!-- 文章管理内容 -->
         <div v-if="activeMenu === 'article-management'" class="article-management-content">
           <el-card shadow="hover">
             <div class="article-management-header">
-              <h2>文章管理</h2>
+              <h2>作者列表</h2>
             </div>
             <div class="author-article-container">
-              <!-- 左侧作者列表 -->
               <div class="author-list">
                 <el-table
                     :data="authorList"
@@ -180,49 +172,41 @@
                     v-loading="authorLoading"
                 >
                   <el-table-column
-                      prop="username"
-                      label="作者"
-                      width="130"
+                      prop="index"
+                      label="序号"
+                      width="80"
                       align="center"
-                      header-align="right"
-                      header-class-name="right-aligned-header"
+                      header-align="center"
+                  />
+                  <el-table-column
+                      prop="username"
+                      label="作者姓名"
+                      width="200"
+                      align="center"
+                      header-align="center"
                   />
                   <el-table-column
                       prop="articleCount"
                       label="文章数"
-                      width="160"
+                      width="150"
                       align="center"
-                      header-align="right"
-                      header-class-name="right-aligned-header"
+                      header-align="center"
                   />
-                  <el-table-column
-                      label="操作"
-                      width="130"
-                      align="center"
-                      header-align="right"
-                      header-class-name="right-aligned-header"
-                  >
+                  <el-table-column label="操作" width="150" align="center" header-align="center">
                     <template #default="{ row }">
-                      <el-button
-                          size="small"
-                          @click="enterArticleManagement(row)"
-                      >管理文章</el-button>
+                      <el-button size="small" @click="manageArticles(row)">管理文章</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
-                <div class="pagination-container">
-                  <el-pagination
-                      v-model:current-page="authorCurrentPage"
-                      v-model:page-size="authorPageSize"
-                      :page-sizes="[5, 10, 20]"
-                      :total="totalAuthors"
-                      layout="total, sizes, prev, pager, next, jumper"
-                      @size-change="handleAuthorSizeChange"
-                      @current-change="handleAuthorPageChange"
-                  />
-                </div>
+                <el-pagination
+                    v-model:current-page="authorCurrentPage"
+                    v-model:page-size="authorPageSize"
+                    :total="totalAuthors"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    @size-change="handleAuthorSizeChange"
+                    @current-change="handleAuthorPageChange"
+                />
               </div>
-
               <!-- 右侧统计图表 -->
               <div class="statistics-chart">
                 <div class="chart-title">作者文章统计</div>
@@ -231,13 +215,12 @@
             </div>
           </el-card>
         </div>
-
         <!-- 文章详情页面 -->
         <div v-if="activeMenu === 'author-article-detail'" class="author-article-detail">
           <el-card shadow="hover">
             <div class="author-info">
-              <el-button type="text" @click="backToArticleManagement">
-                <el-icon><ArrowLeft /></el-icon> 返回文章管理
+              <el-button type="text" @click="backToAuthorList">
+                <el-icon><ArrowLeft /></el-icon> 返回作者列表
               </el-button>
               <div class="author-profile">
                 <el-avatar :size="60" :src="currentAuthor?.avatar" />
@@ -251,13 +234,7 @@
               <el-button type="primary" @click="showAddArticleDialog">
                 <el-icon><Plus /></el-icon>新增文章
               </el-button>
-              <el-input
-                  v-model="articleSearchQuery"
-                  placeholder="搜索文章标题"
-                  style="width: 300px; margin-left: 10px;"
-                  clearable
-                  @clear="handleArticleSearch"
-              >
+              <el-input v-model="articleSearchQuery" placeholder="搜索文章标题" clearable @clear="handleArticleSearch">
                 <template #append>
                   <el-button @click="handleArticleSearch">
                     <el-icon><Search /></el-icon>
@@ -266,43 +243,26 @@
               </el-input>
             </div>
             <el-table :data="filteredArticleList" v-loading="articleLoading">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="title" label="标题" width="200" />
-              <el-table-column prop="category" label="分类" width="120" />
-              <el-table-column prop="status" label="状态" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.status === 'published' ? 'success' : 'warning'">
-                    {{ row.status === 'published' ? '已发布' : '草稿' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="createTime" label="创建时间" width="180" />
-              <el-table-column prop="updateTime" label="更新时间" width="180" />
-              <el-table-column label="操作" width="180">
+              <el-table-column prop="index" label="序号" width="80" align="center" />
+              <el-table-column prop="title" label="文章标题" width="200" align="center" />
+              <el-table-column prop="content" label="文章内容" width="200" align="center" />
+              <el-table-column label="操作" width="200" align="center">
                 <template #default="scope">
-                  <el-button size="small" @click="editArticle(scope.row)">编辑</el-button>
-                  <el-button
-                      size="small"
-                      type="danger"
-                      @click="deleteArticle(scope.row)"
-                  >删除</el-button>
+                  <el-button size="small" @click="editArticle(scope.row)">修改</el-button>
+                  <el-button size="small" type="danger" @click="deleteArticle(scope.row)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
-            <div class="pagination-container">
-              <el-pagination
-                  v-model:current-page="articleCurrentPage"
-                  v-model:page-size="articlePageSize"
-                  :page-sizes="[5, 10, 20]"
-                  :total="totalArticles"
-                  layout="total, sizes, prev, pager, next, jumper"
-                  @size-change="handleArticleSizeChange"
-                  @current-change="handleArticlePageChange"
-              />
-            </div>
+            <el-pagination
+                v-model:current-page="articleCurrentPage"
+                v-model:page-size="articlePageSize"
+                :total="totalArticles"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleArticleSizeChange"
+                @current-change="handleArticlePageChange"
+            />
           </el-card>
         </div>
-
         <!-- 用户编辑对话框 -->
         <el-dialog v-model="dialogVisible" :title="dialogTitle" width="50%">
           <el-form ref="contactForm" :model="formData" :rules="formRules" label-width="100px">
@@ -329,40 +289,11 @@
     </span>
           </template>
         </el-dialog>
-
         <!-- 文章编辑对话框 -->
         <el-dialog v-model="articleDialogVisible" :title="articleDialogTitle" width="50%">
-          <el-form
-              ref="articleForm"
-              :model="articleFormData"
-              :rules="articleFormRules"
-              label-width="100px"
-          >
+          <el-form ref="articleForm" :model="articleFormData" :rules="articleFormRules" label-width="100px">
             <el-form-item label="文章标题" prop="title">
-              <el-input
-                  v-model="articleFormData.title"
-                  placeholder="请输入文章标题"
-              />
-            </el-form-item>
-            <el-form-item label="文章分类" prop="category">
-              <el-select
-                  v-model="articleFormData.category"
-                  placeholder="请选择分类"
-                  style="width: 100%"
-              >
-                <el-option
-                    v-for="item in categoryOptions"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="文章状态" prop="status">
-              <el-radio-group v-model="articleFormData.status">
-                <el-radio label="published">已发布</el-radio>
-                <el-radio label="draft">草稿</el-radio>
-              </el-radio-group>
+              <el-input v-model="articleFormData.title" placeholder="请输入文章标题" />
             </el-form-item>
             <el-form-item label="文章内容" prop="content">
               <el-input
@@ -374,10 +305,10 @@
             </el-form-item>
           </el-form>
           <template #footer>
-            <span class="dialog-footer">
-              <el-button @click="articleDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitArticleForm">确定</el-button>
-            </span>
+          <span class="dialog-footer">
+            <el-button @click="articleDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitArticleForm">确定</el-button>
+          </span>
           </template>
         </el-dialog>
       </div>
@@ -389,7 +320,7 @@ import * as echarts from 'echarts'
 import { onMounted, ref, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter, useRoute } from 'vue-router'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, Search } from '@element-plus/icons-vue'
 import { isSameDay } from 'date-fns'
 import {
   HomeFilled,
@@ -401,7 +332,6 @@ import { User } from "@/types/user";  // 确保路径正确
 import axios, {AxiosError} from 'axios';
 const router = useRouter()
 const userStore = useUserStore() // 先声明
-console.log("User Information:", userStore.username);  // 查看 `userStore` 中的数据
 const canEdit = userStore.hasRole('admin') || userStore.hasRole('editor') // 后使用
 // 当前日期
 const currentDate = ref(new Date())
@@ -444,7 +374,6 @@ const formatDate = (dateString: string | Date | undefined): string => {
     minute: '2-digit'
   })
 }
-
 // 退出登录方法
 const handleLogout = async () => {
   try {
@@ -514,13 +443,9 @@ const fetchContactList = async () => {
         searchQuery: searchQuery.value
       }
     });
-
     // 适配新的响应格式
     contactList.value = res.data.data || [];
     totalUsers.value = res.data.total || 0;
-
-    console.log('联系人列表响应:', res.data);
-    console.log('渲染数据:', contactList.value);
   } catch (error: any) {
     console.error('获取联系人列表失败:', error);
     if (error.response) {
@@ -570,22 +495,18 @@ const handleEdit = (row: any) => {
 };
 // 删除联系人
 const handleDelete = async (row: Contact) => {
-  console.log('删除ID:', row.id);
   try {
     if (row.id === undefined) {
       ElMessage.error('联系人ID无效，删除失败');
       return;
     }
-
     await ElMessageBox.confirm('确定要删除该联系人吗?', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     });
-    console.log("id的类型是",typeof row.id); // 查看类型
     // 确保传递的是 Long 类型 ID
     const success = await deleteContact(String(row.id));  // 转换为 String 后传递
-
     if (success) {
       ElMessage.success('删除成功');
       // 刷新列表
@@ -598,7 +519,6 @@ const handleDelete = async (row: Contact) => {
     }
   }
 };
-
 // 提交表单
 const submitForm = async () => {
   try {
@@ -616,27 +536,21 @@ const submitForm = async () => {
 // 新增联系人
 const addContact = async (contact: any) => {
   const response = await axios.post('/api/contact', contact, );
-  console.log("新增联系人信息", response.data)
   ElMessage.success('新增联系人成功');
   return response.data;
 };
-
 // 更新联系人
 const updateContact = async (contact: any) => {
   const response = await axios.put(`/api/contact/${contact.id}`, contact, {
   });
   ElMessage.success('更新联系人成功');
-  console.log("更改联系人信息", response.data)
   return response.data;
 };
-
 // 删除联系人API调用
 const deleteContact = async (id: string) => {
-  console.log("deleteContact删除ID:", id, "id的类型是", typeof id);
   try {
     // 确保传递的是 Long 类型 ID
     const response = await axios.delete(`/api/contact/${id}`);
-    console.log('删除成功', response.data);
     return true;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -647,74 +561,181 @@ const deleteContact = async (id: string) => {
     return false;
   }
 };
-
 // 初始化
 onMounted(() => {
   initTheme()
   fetchContactList ()
 })
-
+interface Author {
+  id: number;
+  username: string;
+  avatar: string;
+  articleCount: number;
+}
 // 文章管理相关状态
-const authorList = ref<Array<{id: number, username: string, avatar: string, articleCount: number}>>([])
+const authorList = ref<Author[]>([]);
 const authorCurrentPage = ref(1)
 const authorPageSize = ref(5)
 const totalAuthors = ref(0)
 const authorLoading = ref(false)
 const chartRef = ref<HTMLElement | null>(null)
 let chartInstance: echarts.ECharts | null = null
+interface Article {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+}
+// 声明文章列表
+const articleList = ref<Article[]>([]);
 // 当前选中的作者
 const currentAuthor = ref<{id: number, username: string, avatar: string, articleCount: number} | null>(null)
 // 文章列表相关状态
-const articleList = ref<Array<{
-  id: number,
-  title: string,
-  content: string,
-  category: string,
-  status: string,
-  createTime: string,
-  updateTime: string
-}>>([])
-const filteredArticleList = ref<Array<any>>([])
-const articleLoading = ref(false)
-const articleSearchQuery = ref('')
-const articleCurrentPage = ref(1)
-const articlePageSize = ref(10)
-const totalArticles = ref(0)
 
+// 获取作者列表数据
+const fetchAuthors = async () => {
+  authorLoading.value = true
+  try {
+    const response = await axios.get(`/api/authors`, {
+      params: {
+        page: authorCurrentPage.value,
+        size: authorPageSize.value
+      }
+    })
+
+// 处理递归嵌套的数据
+    const processAuthor = (author: Author): Author => {
+      if (!author) return author
+      // 创建一个新的作者对象，去除articles字段
+      const processed: Author = {
+        id: author.id,
+        username: author.username,
+        avatar: author.avatar,
+        articleCount: author.articleCount
+      }
+      return processed
+    }
+    // 提取并处理作者数据
+    const rawData = response.data
+    let authorsData = []
+    if (rawData.authors) {
+      authorsData = rawData.authors.map((author: Author) => ({
+        ...author
+      }));
+    }
+
+    authorList.value = authorsData.map((author: Author, index: number) => ({
+      ...author,
+      index: (authorCurrentPage.value - 1) * authorPageSize.value + index + 1
+    }))
+    totalAuthors.value = rawData.totalItems || 0
+    // 更新图表
+    if (chartRef.value && !chartInstance) {
+      updateChart()
+    }
+  } catch (error) {
+    console.error('获取作者列表失败:', error)
+    ElMessage.error('获取作者列表失败: ' + (error as Error).message)
+  } finally {
+    authorLoading.value = false
+  }
+}
+// 获取文章数据
+const fetchArticles = async () => {
+  if (!currentAuthor.value) return;
+  articleLoading.value = true;
+  try {
+    const response = await axios.get(`/api/authors/${currentAuthor.value.id}/articles`);
+    filteredArticleList.value = response.data;
+    totalArticles.value = response.data.length;
+    console.log("文章数据", response.data)
+  } catch (error) {
+    ElMessage.error('获取文章失败');
+  } finally {
+    articleLoading.value = false;
+  }
+};
+
+// 处理作者列表分页变化
+const handleAuthorPageChange = (page: number) => {
+  authorCurrentPage.value = page
+  fetchAuthors()
+}
+// 更新图表
+const updateChart = () => {
+  if (!chartInstance) return
+  const chartData = authorList.value.map(author => ({
+    name: author.username,
+    value: author.articleCount
+  }))
+
+  if (authorList.value.length > 0) {
+    updateChart();  // 只有在数据存在时才更新图表
+  } else {
+    console.log('没有数据，无法显示图表');
+  }
+
+  const option = {
+    title: {
+      text: '作者文章统计',
+      subtext: '基于作者的文章数量',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} 文章'
+    },
+    xAxis: {
+      type: 'category',
+      data: authorList.value.map(author => author.username)
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '文章数',
+        type: 'bar',
+        data: chartData
+      }
+    ]
+  }
+  chartInstance.setOption(option)
+}
+// 进入文章管理页面
+const manageArticles = (author: { id: number, username: string, avatar: string, articleCount: number }) => {
+  currentAuthor.value = author
+  activeMenu.value = 'author-article-detail'  // 更新菜单，切换到文章管理页面
+}
+// 返回到作者列表页面
+const backToAuthorList = () => {
+  currentAuthor.value = null
+  activeMenu.value = 'article-management'
+}
+// 页面初始化时获取数据
+onMounted(() => {
+  // 使用 nextTick 确保 DOM 完成更新后再初始化图表
+  nextTick(() => {
+    initChart();  // 初始化图表
+  });
+  fetchAuthors()
+})
+const filteredArticleList = ref<Article[]>([]);
+const articleSearchQuery = ref('');
+const articleLoading = ref(false);
+const articleCurrentPage = ref(1);
+const articlePageSize = ref(10);
+const totalArticles = ref(0);
 // 文章对话框相关
 const articleDialogVisible = ref(false)
 const articleDialogTitle = ref('新增文章')
-const articleFormData = ref({
-  id: 0,
-  title: '',
-  content: '',
-  category: '',
-  status: 'draft'
-})
-
-// 分类选项
-const categoryOptions = [
-  { value: 'technology', label: '技术' },
-  { value: 'life', label: '生活' },
-  { value: 'travel', label: '旅行' },
-  { value: 'other', label: '其他' }
-]
+const articleFormData = ref({ id: 0, title: '', content: '' });
 
 // 文章表单验证规则
 const articleFormRules = {
-  title: [
-    { required: true, message: '请输入文章标题', trigger: 'blur' },
-    { min: 3, max: 50, message: '长度在3到50个字符', trigger: 'blur' }
-  ],
-  category: [
-    { required: true, message: '请选择文章分类', trigger: 'change' }
-  ],
-  content: [
-    { required: true, message: '请输入文章内容', trigger: 'blur' },
-    { min: 10, message: '内容至少10个字符', trigger: 'blur' }
-  ]
+  title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
+  content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }],
 }
-
 // 获取作者列表
 const fetchAuthorList = async () => {
   authorLoading.value = true
@@ -744,83 +765,38 @@ const fetchAuthorList = async () => {
     authorLoading.value = false
   }
 }
-
 // 初始化图表
 const initChart = () => {
-  if (chartRef.value) {
+
+  if (chartRef.value && !chartInstance) {
     chartInstance = echarts.init(chartRef.value)
+    // 在 initChart 函数中添加 resize 事件监听
     window.addEventListener('resize', () => {
-      chartInstance?.resize()
-    })
+      if (chartInstance) {
+        chartInstance.resize();  // 窗口大小变化时调整图表大小
+      }
+    });
+
   }
 }
-
-// 更新图表数据
-const updateChart = () => {
-  if (!chartInstance || !authorList.value.length) return
-
-  const option = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'value',
-      boundaryGap: [0, 0.01]
-    },
-    yAxis: {
-      type: 'category',
-      data: authorList.value.map(author => author.username)
-    },
-    series: [
-      {
-        name: '文章数量',
-        type: 'bar',
-        data: authorList.value.map(author => author.articleCount),
-        itemStyle: {
-          color: function(params: any) {
-            // 根据数据值返回不同颜色
-            const colorList = ['#c23531','#2f4554','#61a0a8','#d48265','#91c7ae','#749f83','#ca8622','#bda29a','#6e7074','#546570','#c4ccd3']
-            return colorList[params.dataIndex % colorList.length]
-          }
-        }
-      }
-    ]
-  }
-
-  chartInstance.setOption(option)
-}
-
 // 处理作者选择变化
 const handleAuthorChange = (author: any) => {
   currentAuthor.value = author
 }
-
 // 进入文章管理
 const enterArticleManagement = (author: any) => {
   currentAuthor.value = author
   activeMenu.value = 'author-article-detail'
   fetchArticlesByAuthor()
 }
-
 // 返回文章管理主界面
 const backToArticleManagement = () => {
   activeMenu.value = 'article-management'
   currentAuthor.value = null
 }
-
 // 获取作者的文章列表
 const fetchArticlesByAuthor = async () => {
   if (!currentAuthor.value) return
-
   articleLoading.value = true
   try {
     // 模拟API调用
@@ -835,7 +811,6 @@ const fetchArticlesByAuthor = async () => {
       createTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
       updateTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
     }))
-
     articleList.value = mockArticles
     totalArticles.value = mockArticles.length
     filterArticles()
@@ -846,7 +821,6 @@ const fetchArticlesByAuthor = async () => {
     articleLoading.value = false
   }
 }
-
 // 过滤文章
 const filterArticles = () => {
   let result = [...articleList.value]
@@ -863,55 +837,37 @@ const filterArticles = () => {
   const end = start + articlePageSize.value
   filteredArticleList.value = result.slice(start, end)
 }
-
 // 文章搜索处理
 const handleArticleSearch = () => {
   articleCurrentPage.value = 1
   filterArticles()
 }
-
 // 文章分页处理
 const handleArticleSizeChange = (val: number) => {
   articlePageSize.value = val
   filterArticles()
 }
-
 const handleArticlePageChange = (val: number) => {
   articleCurrentPage.value = val
   filterArticles()
 }
-
 // 作者分页处理
 const handleAuthorSizeChange = (val: number) => {
   authorPageSize.value = val
   fetchAuthorList()
 }
-
-const handleAuthorPageChange = (val: number) => {
-  authorCurrentPage.value = val
-  fetchAuthorList()
-}
-
 // 显示新增文章对话框
 const showAddArticleDialog = () => {
-  articleDialogTitle.value = '新增文章'
-  articleFormData.value = {
-    id: 0,
-    title: '',
-    content: '',
-    category: '',
-    status: 'draft'
-  }
-  articleDialogVisible.value = true
-}
-
+  articleFormData.value = { id: 0, title: '', content: '' };
+  articleDialogTitle.value = '新增文章';
+  articleDialogVisible.value = true;
+};
 // 编辑文章
 const editArticle = (row: any) => {
   articleDialogTitle.value = '编辑文章'
   articleFormData.value = { ...row }
   articleDialogVisible.value = true
 }
-
 // 删除文章
 const deleteArticle = async (row: any) => {
   try {
@@ -930,39 +886,20 @@ const deleteArticle = async (row: any) => {
     // 取消删除
   }
 }
-
 // 提交文章表单
 const submitArticleForm = async () => {
   try {
-    if (articleDialogTitle.value === '新增文章') {
-      // 模拟新增
-      const newId = Math.max(...articleList.value.map(a => a.id), 0) + 1
-      const newArticle = {
-        ...articleFormData.value,
-        id: newId,
-        createTime: new Date().toISOString(),
-        updateTime: new Date().toISOString()
-      }
-      articleList.value.unshift(newArticle)
-      currentAuthor.value!.articleCount += 1
-      totalArticles.value += 1
-      ElMessage.success('新增文章成功')
+    if (articleFormData.value.id === 0) {
+      await axios.post('/api/articles', articleFormData.value);
+      ElMessage.success('新增文章成功');
     } else {
-      // 模拟编辑
-      const index = articleList.value.findIndex(a => a.id === articleFormData.value.id)
-      if (index !== -1) {
-        articleList.value[index] = {
-          ...articleList.value[index],
-          ...articleFormData.value,
-          updateTime: new Date().toISOString()
-        }
-      }
-      ElMessage.success('更新文章成功')
+      await axios.put(`/api/articles/${articleFormData.value.id}`, articleFormData.value);
+      ElMessage.success('修改文章成功');
     }
-    articleDialogVisible.value = false
-    filterArticles()
+    articleDialogVisible.value = false;
+    fetchArticles();
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error('操作失败');
   }
 }
 const handleCommand = (command: string) => { if (command === 'logout') { handleLogout(); } else if (command === 'profile') { // 切换显示基本信息
@@ -976,7 +913,6 @@ watch(authorList, () => {
 }, { deep: true })
 </script>
 <style scoped>
-
 /* 基础布局样式 */
 .home-container {
   display: flex;
@@ -1012,7 +948,6 @@ watch(authorList, () => {
   gap: 20px;
   margin-top: 20px;
 }
-
 .user-profile {
   flex: 1;
 }
@@ -1144,7 +1079,6 @@ watch(authorList, () => {
   justify-content: flex-end !important;
   padding-right: 15px !important;
 }
-
 /* 保持表格整体宽度 */
 .author-list .el-table {
   width: 100%;
@@ -1153,7 +1087,6 @@ watch(authorList, () => {
   flex: 1;
   min-width: 400px;
 }
-
 .statistics-chart {
   flex: 2;
   min-width: 500px;
@@ -1162,7 +1095,6 @@ watch(authorList, () => {
   border-radius: 4px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
 }
-
 .chart-title {
   font-size: 16px;
   font-weight: bold;
@@ -1174,32 +1106,26 @@ watch(authorList, () => {
 .author-article-detail {
   padding: 20px;
 }
-
 .author-info {
   margin-bottom: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid #eee;
 }
-
 .author-profile {
   display: flex;
   align-items: center;
   margin-top: 15px;
 }
-
 .profile-text {
   margin-left: 15px;
 }
-
 .profile-text h3 {
   margin: 0 0 5px 0;
 }
-
 .profile-text p {
   margin: 0;
   color: #666;
 }
-
 .article-operations {
   display: flex;
   justify-content: space-between;
